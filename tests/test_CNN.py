@@ -1,12 +1,42 @@
 # -*- coding: utf-8 -*-
-# disable=C0301, C0103, E1101
 """
-Model creation script
+Created on Wed Dec 21 17:26:31 2022
+
+@author: tomas
 """
-import warnings
-from tensorflow.keras import layers, models
+
+import cv2
+import pytest
+import numpy as np
+import CNN
 
 
+# Testing invalid inputs
+@pytest.mark.parametrize(
+    "labels, convolutional_layers, pooling_layers, input_shape",
+    [
+        (-1, 0, "STR", 1, []),
+        ((5, 7, -1), ["A"], "STR", 0),
+
+        (-1, 3, True, (10, 10)),
+        (0, 3, True, (10, 10)),
+        ("STR", 3, True, (10, 10)),
+        (True, 3, True, (10, 10)),
+        ([], 3, True, (10, 10)),
+
+        (10, -1, True, (10, 10)),
+        (10, 0, True, (10, 10)),
+        (10, "STR", True, (10, 10)),
+        (10, True, True, (10, 10)),
+        (10, [], True, (10, 10)),
+    ])
+def test_build_model_invalid(labels, convolutional_layers, pooling_layers, input_shape):
+
+    assert CNN.build_model(labels, convolutional_layers, pooling_layers, input_shape) == ValueError
+
+
+    
+    
 def build_model(labels, convolutional_layers=2, pooling_layers=True, input_shape=None):
     """
     Creates a simple convolutional network by adding layers based on input
