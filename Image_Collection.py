@@ -11,6 +11,7 @@ import re
 import warnings
 import cv2
 import numpy as np
+from tensorflow.keras.models import Sequential
 
 
 def new_folder(dir_name, verbose=False):
@@ -299,9 +300,35 @@ def image_capturing(gesture_list, examples="Examples", save=True, predict=False,
         raise ValueError("Different datatype than boolean has been given as input for the save parameter.")
 
     if save:
-        pass
-        # Deploy further input management for other parameters
-        # TODO !!!!
+        if not isinstance(data_directory, str):
+            raise ValueError("Different datatype than string has been given for the name of the folder to save images in.")
+        if not os.path.exists(data_directory):
+            raise ValueError("The given directory to save images does not exist, please specify a correct directory path.")
+
+        if not isinstance(current_amounts, dict):
+            raise ValueError("Different datatype than dictionary has been given for the current_amounts parameter.")
+        for key, val in current_amounts.items():
+            if not isinstance(key, str) or not isinstance(val, int):
+                raise ValueError("Different datatype than string for key or integer for value has been given for one of the values in the current_amounts dictionary.")
+            if val < 0:
+                raise ValueError("Negative value has been given as current amount of datapoints for one of the gestures.")
+
+        if not isinstance(desired_amounts, dict):
+            raise ValueError("Different datatype than dictionary has been given for the desired_amounts parameter.")
+        for key, val in desired_amounts.items():
+            if not isinstance(key, str) or not isinstance(val, int):
+                raise ValueError("Different datatype than string for key or integer for value has been given for one of the values in the desired_amounts dictionary.")
+
+    if not isinstance(predict, bool):
+        raise ValueError("Different datatype than boolean has been given as input for the predict parameter.")
+
+    if predict:
+        if not model:
+            raise ValueError("Cannot perform predictions without a model specified.")
+        if not isinstance(model, Sequential):
+            raise ValueError("Different datatype than keras.engine.sequential.Sequential has been given as an input for the model parameter.")
+        if model.layers[-1].units != len(gesture_list):
+            warnings.warn("Given model has different output size than given gesture list so the predictions might be incorrect.")
 
     # The rectangle in the frame that is cropped from the web camera image
     # (one for torso location, one for fingerspelling location)

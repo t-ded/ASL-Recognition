@@ -5,8 +5,7 @@ A simple function to enable running
 the different scripts from command line.
 
 Parameters:
-    setup: string
-        Setup the folder environment.
+
     collect: string
         Start the process of data collection.
     train: string
