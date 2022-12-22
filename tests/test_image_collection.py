@@ -17,7 +17,7 @@ from tensorflow.keras.models import Sequential
         (150, True),
         (0.5, True),
         (["STR"], True),
-        (("ABCD"), True),
+        (("ABCD",), True),
 
         # Test invalid inputs for verbose parameter
         ("Valid", 1),
@@ -55,13 +55,13 @@ def test_new_folder_valid(tmpdir, dir_name):
 
 # Testing invalid inputs for repair_padding function
 @pytest.mark.parametrize(
-    "dir_name, verbose",
+    "dir_name",
     [
         # Test invalid inputs for dir_name parameter
         (150),
         (0.5),
         (["STR"]),
-        (("ABCD"))
+        (("ABCD",))
     ])
 def test_repair_padding_invalid(dir_name):
 
@@ -82,7 +82,10 @@ def test_repair_padding_invalid(dir_name):
         (["A_1.jpg", "B_2.jpg"], ["A_1.jpg", "B_2.jpg"]),
 
         # Test repairing padding with a single file with a non-positive numbering
-        (["A_1.jpg", "A_0.jpg"], ["A_1.jpg", "A_0.jpg"]),
+        (["A_0.jpg"], ["A_1.jpg"]),
+
+        # Test repairing padding with two files, one with non-positive numbering and A_1 already existing
+        (["A_1.jpg", "A_0.jpg"], ["A_1.jpg", "A_2.jpg"]),
     ])
 def test_repair_padding(tmpdir, files, expected_files):
 
@@ -91,9 +94,8 @@ def test_repair_padding(tmpdir, files, expected_files):
         file_path.write("")
 
     image_collection.repair_padding(str(tmpdir))
-    repaired_files = sorted(tmpdir.listdir())
 
-    assert repaired_files == expected_files
+    assert os.listdir(tmpdir) == expected_files
 
 
 # Testing invalid inputs for setup_folders function
@@ -102,7 +104,7 @@ def test_repair_padding(tmpdir, files, expected_files):
     [
         # Test invalid inputs for script_directory parameter
         (123, ["A", "B"], 10),
-        ("", ["A", "B"], 10),
+        ("****/////", ["A", "B"], 10),
         ("invalid/directory/path", ["A", "B"], 10),
 
         # Test invalid inputs for gestures_list parameter
@@ -252,4 +254,4 @@ def test_image_capturing_invalid(gesture_list, examples, current_amounts, desire
 def test_image_capturing_invalid2(predict, model):
 
     with pytest.raises(ValueError):
-        image_collection.create_rectangle(gestures=["A", "B", "C"], predict=predict, model=model)
+        image_collection.image_capturing(gesture_list=["A", "B", "C"], predict=predict, model=model)

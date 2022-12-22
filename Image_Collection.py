@@ -71,9 +71,14 @@ def repair_padding(dir_name):
     # The first image should have 1 in it's padding, rename it if necessary
     if filecount:
         first_split = re.split(r"[_|.]", files[0])
+        last_split = re.split(r"[_|.]", files[-1])
         if int(first_split[1]) != 1:
-            new_name = first_split[0] + "_" + str(1) + "." + first_split[2]
-            os.rename(os.path.join(dir_name, files[0]), os.path.join(dir_name, new_name))
+            try:
+                new_name = first_split[0] + "_" + str(1) + "." + first_split[2]
+                os.rename(os.path.join(dir_name, files[0]), os.path.join(dir_name, new_name))
+            except FileExistsError:
+                new_name = first_split[0] + "_" + str(int(last_split[1]) + 1) + "." + first_split[2]
+                os.rename(os.path.join(dir_name, files[0]), os.path.join(dir_name, new_name))
             files = os.listdir(dir_name)
             files.sort(key=lambda file: int(re.split(r"[_|.]", file)[1]))
 
