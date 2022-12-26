@@ -25,7 +25,7 @@ import CNN
 import tensorflow as tf
 
 
-gestures = ["I", "My", "You", "Your",
+gestures = ["I index", "My", "You", "Your",
             "In", "To", "With", "Yes",
             "No", "Well", "I love you",
             "Oh I see", "Name", "Hug",
@@ -59,41 +59,41 @@ def main(argv):
             print("Your data has been collected, please check the folders.")
         elif arg == "train":
             data_dir, example_dir, desired_amount, current_amount, paths = image_collection.setup_folders(os.path.dirname("image_collection.py"), gestures, 500)
-            model = CNN.build_model(labels=len(gestures), input_shape=(50, 50))
+            model = CNN.build_model(labels=len(gestures))
             model.compile(optimizer="adam",
                           loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                           metrics=["accuracy"])
-            print("Model has been built, showing model summary now.")
-            print(model.summary())
             train_images = tf.keras.preprocessing.image_dataset_from_directory(data_dir,
                                                                                validation_split=0.25,
                                                                                subset="training",
                                                                                seed=123,
-                                                                               image_size=(50, 50),
+                                                                               image_size=(64, 64),
                                                                                color_mode="grayscale")
             test_images = tf.keras.preprocessing.image_dataset_from_directory(data_dir,
                                                                               validation_split=0.25,
                                                                               subset="validation",
                                                                               seed=123,
-                                                                              image_size=(50, 50),
+                                                                              image_size=(64, 64),
                                                                               color_mode="grayscale")
-            model.fit(train_images, batch_size=20, epochs=10, validation_data=(test_images))
-            model.save_weights()
+            model.fit(train_images, batch_size=20, epochs=5, validation_data=(test_images))
+            print("Model has been built, showing model summary now.")
+            print(model.summary())
+            model.save_weights("Weights/weights")
         elif arg == "showcase":
             data_dir, example_dir, desired_amount, current_amount, paths = image_collection.setup_folders(os.path.dirname("image_collection.py"), gestures, 500)
             if "train" in argv:
-                image_collection.image_capturing(gestures, examples=example_dir, save=False, predict=True, model=model)
+                image_collection.image_capturing(gestures, examples=example_dir, save=False, predict=True, data_directory=data_dir, model=model)
             else:
-                model = CNN.build_model(labels=len(gestures), input_shape=(50, 50))
+                model = CNN.build_model(labels=len(gestures), input_shape=(64, 64))
                 try:
-                    model.load_weights("")
+                    model.load_weights("Weights/weights").expect_partial()
                 except Exception as exception:
                     if exception.__class__.__name__ == "NotFoundError":
                         print("Please either use the train command along with a showcase command",
-                              "or insert a model weights file in the directory of this script.")
+                              "or insert a model weights folder in the directory of this script.")
                         print("The program will now terminate")
                     return
-            image_collection.image_capturing(gestures, examples=example_dir, save=False, predict=True, model=model)
+            image_collection.image_capturing(gestures, examples=example_dir, save=False, predict=True, data_directory=data_dir, model=model)
         else:
             print(f"Unknown argument {arg}")
 

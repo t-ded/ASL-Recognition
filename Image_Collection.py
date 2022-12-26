@@ -334,6 +334,8 @@ def image_capturing(gesture_list, examples="Examples", save=True, predict=False,
             raise ValueError("Different datatype than keras.engine.sequential.Sequential has been given as an input for the model parameter.")
         if model.layers[-1].units != len(gesture_list):
             warnings.warn("Given model has different output size than given gesture list so the predictions might be incorrect.")
+        if not data_directory:
+            raise ValueError("Please assign a data directory to provide a list of labels for prediction")
 
     # The rectangle in the frame that is cropped from the web camera image
     # (one for torso location, one for fingerspelling location)
