@@ -67,15 +67,15 @@ def main(argv):
                                                                                validation_split=0.25,
                                                                                subset="training",
                                                                                seed=123,
-                                                                               image_size=(64, 64),
+                                                                               image_size=(128, 128),
                                                                                color_mode="grayscale")
             test_images = tf.keras.preprocessing.image_dataset_from_directory(data_dir,
                                                                               validation_split=0.25,
                                                                               subset="validation",
                                                                               seed=123,
-                                                                              image_size=(64, 64),
+                                                                              image_size=(128, 128),
                                                                               color_mode="grayscale")
-            model.fit(train_images, batch_size=20, epochs=5, validation_data=(test_images))
+            model.fit(train_images, batch_size=20, epochs=10, validation_data=(test_images), steps_per_epoch=100)
             print("Model has been built, showing model summary now.")
             print(model.summary())
             model.save_weights("Weights/weights")
@@ -84,7 +84,7 @@ def main(argv):
             if "train" in argv:
                 image_collection.image_capturing(gestures, examples=example_dir, save=False, predict=True, data_directory=data_dir, model=model)
             else:
-                model = CNN.build_model(labels=len(gestures), input_shape=(64, 64))
+                model = CNN.build_model(labels=len(gestures), input_shape=(128, 128))
                 try:
                     model.load_weights("Weights/weights").expect_partial()
                 except Exception as exception:
