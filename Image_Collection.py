@@ -244,9 +244,35 @@ def create_rectangle(origin, size_X, size_Y):
     return [origin, upper_right, lower_left, lower_right]
 
 
+def get_dictionary(translations):
+    """
+    Function to create a dictionary of Czech-English pairs for gestures
+
+    Parameters:
+        translations: str
+            Name of the txt file with translations of gestures in the following format: gesture_English \t gesture_Czech.
+
+    Returns:
+        dictionary: dict of gesture_English: gesture_Czech pairs
+    """
+    if not isinstance(translations, str):
+            raise ValueError("Different datatype than string has been given for the name of the folder with translations.")
+    if not os.path.exists(translations):
+        raise ValueError("The given directory for the translations does not exist, please specify a correct directory path.")
+
+    dictionary = {}
+    with open(translations, "r") as pairs:
+        for pair in pairs:
+            pair = pair.rstrip("\n")
+            english, czech = pair.split("\t")
+            dictionary[english] = czech
+
+    return dictionary
+
+
 def image_capturing(gesture_list, examples="Examples", save=True, predict=False,
                     data_directory=None, current_amounts=None, desired_amounts=None,
-                    gesture_paths=None, model=None):
+                    gesture_paths=None, model=None, translations="translations.txt"):
     """
     Function for image capturing. Enables usage as data collector or purely as image obtainer.
     If the save parameter is True, thresholded binary images in the rectangle you see on the screen
@@ -268,16 +294,18 @@ def image_capturing(gesture_list, examples="Examples", save=True, predict=False,
             If True, legitimate directory for saving needs to be specified.
         predict: bool (default False)
             Whether or not to include prediction on the screen
-        data_directory: str
+        data_directory: str (default None)
             Name of the folder in which to save the images in case save is True.
-        current_amounts: dict of str: int pairs
+        current_amounts: dict of str: int pairs (default None)
             Dictionary of current amounts of datapoints per each gesture. Only relevant in case save is True.
-        desired_amounts: dict of str: int pairs
+        desired_amounts: dict of str: int pairs (default None)
             Dictionary of desired amounts of datapoints per each gesture. Only relevant in case save is True.
-        gesture_paths: dict of str: str pairs
+        gesture_paths: dict of str: str pairs (default None)
             Dictionary of paths for each gesture. Only relevant in case save is True.
-        model: keras.engine.sequential.Sequential
+        model: keras.engine.sequential.Sequential (default None)
             Model that the user would like to use for prediction.
+        translations: str (default "translations.txt")
+            Name of the txt file with translations of gestures in the following format: gesture_English \t gesture_Czech.
     """
     # Input management
     if not isinstance(gesture_list, list):
@@ -336,6 +364,17 @@ def image_capturing(gesture_list, examples="Examples", save=True, predict=False,
             warnings.warn("Given model has different output size than given gesture list so the predictions might be incorrect.")
         if not data_directory:
             raise ValueError("Please assign a data directory to provide a list of labels for prediction")
+
+    if translations is not None:
+        if not isinstance(translations, str):
+            raise ValueError("Different datatype than string has been given for the name of the folder with translations.")
+        if not os.path.exists(translations):
+            raise ValueError("The given directory for the translations does not exist, please specify a correct directory path.")
+        dictionary = get_dictionary(translations)
+        if len(dictionary) != len(gesture_list):
+            raise ValueError("The length of the translations list does not correspond to the list of gestures, please adjust.")
+        if set(dictionary.keys()) != set(gesture_list):
+            raise ValueError("The list of gestures does not correspond to the gestures in the given list of translations.")
 
     # The rectangle in the frame that is cropped from the web camera image
     # (one for torso location, one for fingerspelling location)
@@ -438,18 +477,27 @@ def image_capturing(gesture_list, examples="Examples", save=True, predict=False,
                 # Show all images
 
                 # Live view with frame and text
-                cv2.rectangle(frame, rect[0], rect[3], (0, 255, 0), 2)
+                if (current - current_amounts[gesture] > 65):
+                    cv2.rectangle(frame, rect[0], rect[3], (0, 255, 0), 2)
+                else:
+                    cv2.rectangle(frame, rect[0], rect[3], (0, 0, 255), 2)
                 # Add information about prediction if expected, otherwise just show the name of the gesture
                 if predict:
                     prediction = model(np.expand_dims(np.expand_dims(cv2.resize(frame_binary,
-                                                                                (64, 64)),
+                                                                                (196, 196)),
                                                                      axis=0), axis=-1),
                                        training=False).numpy()
                     txt = gestures_folder[np.argmax(prediction, axis=1)[0]]
                 else:
                     txt = gesture.capitalize()
-                cv2.putText(frame, txt, (rect[0][0], rect[0][1] - 15),
-                            cv2.FONT_HERSHEY_DUPLEX, 1, (0, 255, 0), 2)
+                if not lang:
+                    txt = dictionary[txt]
+                if (current - current_amounts[gesture] > 65):
+                    cv2.putText(frame, txt, (rect[0][0], rect[0][1] - 15),
+                                cv2.FONT_HERSHEY_DUPLEX, 1, (0, 255, 0), 2)
+                else:
+                    cv2.putText(frame, txt, (rect[0][0], rect[0][1] - 15),
+                                cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 255), 2)
                 cv2.imshow("Camera view", frame)
 
                 # Grayscale version
@@ -464,9 +512,19 @@ def image_capturing(gesture_list, examples="Examples", save=True, predict=False,
                     cv2.imshow("Example", cv2.resize(example, (380, 270)))
                     flag = 1
 
+                    # Show big example to warn about new gesture and enable readjustment
+                    if save:
+	                    cv2.namedWindow("BigExample")
+	                    cv2.resizeWindow("BigExample", 1280, 720)
+	                    cv2.moveWindow("BigExample", 125, 50)
+	                    cv2.imshow("BigExample", cv2.resize(example, (1280, 720)))
+	                    cv2.waitKey(1500)
+	                    cv2.destroyWindow("BigExample")
+                    
+
                 # To reduce the number of almost identical frames, only save every n frames
                 # To give space for adjustments and "learning" a new sign, only start collecting after some time
-                if save and not current % 2 and current > 90:
+                if save and not current % 3 and current - current_amounts[gesture] > 70:
 
                     # Create the naming for the file with the desired padding, i.e. ("gesture_run-number.jpg")
                     img_name = gesture + "_" + str(counter) + ".jpg"
@@ -474,7 +532,9 @@ def image_capturing(gesture_list, examples="Examples", save=True, predict=False,
 
                     # Save the cropped rectangle from the frame
                     if not cv2.imwrite(img_path,
-                                       cv2.resize(frame_binary, (64, 64))):
+                                       cv2.resize(frame[(rect[0][1] + 2):(rect[2][1] - 2),
+                                                        (rect[0][0] + 2):(rect[1][0] - 2)],
+                                                  (196, 196))):
                         print("Something went wrong during this attempt:",
                               f"gesture - {gesture}, run - {counter}")
 

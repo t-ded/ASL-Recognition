@@ -1,0 +1,49 @@
+I index	Ja
+My	Muj
+You	Ty
+Your	Tvuj
+In	V, Uvnitr
+To	Na, k, do
+With	S (nekym, necim)
+Yes	Ano
+No	Ne
+Well	Inu
+I love you	Miluji te
+Oh I see	Aha
+Name	Jmeno
+Hug	Objeti
+Internet	Internet
+Bus	Autobus
+Money	Penize
+Work	Prace
+Ask	Zeptat se
+Go	Jit, jet
+Look	Podivat se, podivej se
+Have	Mit
+Correct	Spravne
+Want	Chtit
+Where	Kde
+A	A
+B	B
+C	C
+D	D
+E	E
+F	F
+G	G
+H	H
+I	I
+K	K
+L	L
+M	M
+N	N
+O	O
+P	P
+Q	Q
+R	R
+S	S
+T	T
+U	U
+V	V
+W	W
+X	X
+Y	Y
