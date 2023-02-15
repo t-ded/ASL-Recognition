@@ -18,7 +18,7 @@ from utils import create_rectangle, get_dictionary
 
 
 def showcase_model(gesture_list, examples="Examples", predict=False,
-                   model=None, translations="translations.txt"):
+                   model=None, translations="translations.txt", img_size=196):
     """
     Function for image capturing and showcasing the process, preprocessing
     and possibly the model prediction if given the model.
@@ -40,6 +40,8 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
             Model that the user would like to use for prediction.
         translations: str (default "translations.txt")
             Name of the txt file with translations of gestures in the following format: gesture_English \t gesture_Czech.
+        img_size: int (default 196)
+            Size of images for prediction.
     """
     # Input management
     if not isinstance(gesture_list, list):
@@ -85,11 +87,16 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
         if set(dictionary.keys()) != set(gesture_list):
             raise ValueError("The list of gestures does not correspond to the gestures in the given list of translations.")
 
+    if not isinstance(img_size, int):
+        raise ValueError("Different datatype than int has been given for the image size.")
+    if img_size < 1:
+        raise ValueError("Image size must be positive.")
+
     # The rectangle in the frame that is cropped from the web camera image
     # (one for torso location, one for fingerspelling location)
-    rect_torso = create_rectangle((225, 275), 200, 200)
-    rect_fingerspell_1 = create_rectangle((50, 50), 200, 200)
-    rect_fingerspell_2 = create_rectangle((400, 50), 200, 200)
+    rect_torso = create_rectangle((225, 275), img_size + 4, img_size + 4)
+    rect_fingerspell_1 = create_rectangle((50, 50), img_size + 4, img_size + 4)
+    rect_fingerspell_2 = create_rectangle((400, 50), img_size + 4, img_size + 4)
     rect = rect_torso
 
     # Encapsulate the whole process to be able to close cameras in case of error
@@ -178,10 +185,10 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
                 # Add information about prediction if expected, otherwise just show the name of the gesture
                 if predict:
                     prediction = model(np.expand_dims(np.expand_dims(cv2.resize(frame_binary,
-                                                                                (196, 196)),
+                                                                                (img_size, img_size)),
                                                                      axis=0), axis=-1),
                                        training=False).numpy()
-                    txt = gesture_list[np.argmax(prediction, axis=1)[0]]
+                    txt = gesture_list[np.argmax(prediction, axis=1)[0]] + f"({max(prediction)})"
                 else:
                     txt = gesture.capitalize()
                 if not lang:

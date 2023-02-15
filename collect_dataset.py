@@ -14,8 +14,8 @@ from utils import create_rectangle, get_dictionary
 
 
 def collect_data(gesture_list, examples="Examples", data_directory=None,
-                 current_amounts=None, desired_amounts=None,
-                 gesture_paths=None, translations="translations.txt"):
+                 current_amounts=None, desired_amounts=None, gesture_paths=None,
+                 translations="translations.txt", img_size=196):
     """
     Function for image capturing. Images in the rectangle you see on the screen
     will be saved in appropriate directory for each gesture.
@@ -41,6 +41,8 @@ def collect_data(gesture_list, examples="Examples", data_directory=None,
             Dictionary of paths for each gesture.
         translations: str (default "translations.txt")
             Name of the txt file with translations of gestures in the following format: gesture_English \t gesture_Czech.
+        img_size: int (default 196)
+            Size of images for prediction.
     """
     # Input management
     if not isinstance(gesture_list, list):
@@ -94,11 +96,16 @@ def collect_data(gesture_list, examples="Examples", data_directory=None,
         if set(dictionary.keys()) != set(gesture_list):
             raise ValueError("The list of gestures does not correspond to the gestures in the given list of translations.")
 
+    if not isinstance(img_size, int):
+        raise ValueError("Different datatype than int has been given for the image size.")
+    if img_size < 1:
+        raise ValueError("Image size must be positive.")
+
     # The rectangle in the frame that is cropped from the web camera image
     # (one for torso location, one for fingerspelling location)
-    rect_torso = create_rectangle((225, 275), 200, 200)
-    rect_fingerspell_1 = create_rectangle((50, 50), 200, 200)
-    rect_fingerspell_2 = create_rectangle((400, 50), 200, 200)
+    rect_torso = create_rectangle((225, 275), img_size + 4, img_size + 4)
+    rect_fingerspell_1 = create_rectangle((50, 50), img_size + 4, img_size + 4)
+    rect_fingerspell_2 = create_rectangle((400, 50), img_size + 4, img_size + 4)
     rect = rect_torso
 
     # Encapsulate the whole process to be able to close cameras in case of error
@@ -201,7 +208,7 @@ def collect_data(gesture_list, examples="Examples", data_directory=None,
                     if not cv2.imwrite(img_path,
                                        cv2.resize(frame[(rect[0][1] + 2):(rect[2][1] - 2),
                                                         (rect[0][0] + 2):(rect[1][0] - 2)],
-                                                  (196, 196))):
+                                                  (img_size, img_size))):
                         print("Something went wrong during this attempt:",
                               f"gesture - {gesture}, run - {counter}")
 
