@@ -1,24 +1,27 @@
 """
-Dataset collection script for the Bachelor's Thesis project
+Model or process showcasing script for the Bachelor's Thesis project
 on the following topic:
     "Construction of a Neural Networks model for translation of recorded sign language".
-Turns on the camera and guides the user through the data collection process.
+Turns on the camera and presents the camera view, the final preprocessing steps
+and possibly the model predictions.
 
 @author: Tomáš Děd
 """
 
 import os
 import re
+import warnings
+import numpy as np
 import cv2
+from tensorflow.keras.models import Sequential
 from utils import create_rectangle, get_dictionary
 
 
-def collect_data(gesture_list, examples="Examples", data_directory=None,
-                 current_amounts=None, desired_amounts=None,
-                 gesture_paths=None, translations="translations.txt"):
+def showcase_model(gesture_list, examples="Examples", predict=False,
+                   model=None, translations="translations.txt"):
     """
-    Function for image capturing. Images in the rectangle you see on the screen
-    will be saved in appropriate directory for each gesture.
+    Function for image capturing and showcasing the process, preprocessing
+    and possibly the model prediction if given the model.
 
     Throughout the run of the function, you can use the following commands by using keys on your keyboard:
         Esc - terminate the whole process
@@ -31,14 +34,10 @@ def collect_data(gesture_list, examples="Examples", data_directory=None,
             List of gestures to go through
         examples: str (default "Examples")
             Name of the folder with examples.
-        data_directory: str (default None)
-            Name of the folder in which to save the images.
-        current_amounts: dict of str: int pairs (default None)
-            Dictionary of current amounts of datapoints per each gesture.
-        desired_amounts: dict of str: int pairs (default None)
-            Dictionary of desired amounts of datapoints per each gesture.
-        gesture_paths: dict of str: str pairs (default None)
-            Dictionary of paths for each gesture.
+        predict: bool (default False)
+            Whether or not to include prediction on the screen
+        model: keras.engine.sequential.Sequential (default None)
+            Model that the user would like to use for prediction.
         translations: str (default "translations.txt")
             Name of the txt file with translations of gestures in the following format: gesture_English \t gesture_Czech.
     """
@@ -64,24 +63,16 @@ def collect_data(gesture_list, examples="Examples", data_directory=None,
     if set(gesture_names) != set(gesture_list):
         raise ValueError("The list of gestures does not correspond to the files in the given example folder.")
 
-    if not isinstance(data_directory, str):
-        raise ValueError("Different datatype than string has been given for the name of the folder to save images in.")
-    if not os.path.exists(data_directory):
-        raise ValueError("The given directory to save images does not exist, please specify a correct directory path.")
+    if not isinstance(predict, bool):
+        raise ValueError("Different datatype than boolean has been given as input for the predict parameter.")
 
-    if not isinstance(current_amounts, dict):
-        raise ValueError("Different datatype than dictionary has been given for the current_amounts parameter.")
-    for key, val in current_amounts.items():
-        if not isinstance(key, str) or not isinstance(val, int):
-            raise ValueError("Different datatype than string for key or integer for value has been given for one of the values in the current_amounts dictionary.")
-        if val < 0:
-            raise ValueError("Negative value has been given as current amount of datapoints for one of the gestures.")
-
-    if not isinstance(desired_amounts, dict):
-        raise ValueError("Different datatype than dictionary has been given for the desired_amounts parameter.")
-    for key, val in desired_amounts.items():
-        if not isinstance(key, str) or not isinstance(val, int):
-            raise ValueError("Different datatype than string for key or integer for value has been given for one of the values in the desired_amounts dictionary.")
+    if predict:
+        if not model:
+            raise ValueError("Cannot perform predictions without a model specified.")
+        if not isinstance(model, Sequential):
+            raise ValueError("Different datatype than keras.engine.sequential.Sequential has been given as an input for the model parameter.")
+        if model.layers[-1].units != len(gesture_list):
+            warnings.warn("Given model has different output size than given gesture list so the predictions might be incorrect.")
 
     if translations is not None:
         if not isinstance(translations, str):
@@ -108,12 +99,20 @@ def collect_data(gesture_list, examples="Examples", data_directory=None,
 
         # Establish the windows and place them accordingly
         cv2.namedWindow("Camera view")
-        cv2.resizeWindow("Camera view", 1080, 720)
+        cv2.resizeWindow("Camera view", 640, 480)
         cv2.moveWindow("Camera view", 15, 200)
 
+        cv2.namedWindow("Grayscale view")
+        cv2.resizeWindow("Grayscale view", 480, 360)
+        cv2.moveWindow("Grayscale view", 655, 30)
+
+        cv2.namedWindow("Binary view")
+        cv2.resizeWindow("Binary view", 480, 360)
+        cv2.moveWindow("Binary view", 655, 430)
+
         cv2.namedWindow("Example")
-        cv2.resizeWindow("Example", 640, 480)
-        cv2.moveWindow("Example", 1125, 200)
+        cv2.resizeWindow("Example", 380, 270)
+        cv2.moveWindow("Example", 1125, 280)
 
         lang = True  # To let the user change language, True stands for English, False for Czech
         rectangle_position = 0  # Which position of the rectangle to use
@@ -122,21 +121,16 @@ def collect_data(gesture_list, examples="Examples", data_directory=None,
         for gesture in gesture_list:
 
             # Initialize necessary variables (different per gesture)
-            current = current_amounts[gesture] + 1
-            end = desired_amounts[gesture]
-            counter = current
-
             flag = 0  # To know when a new gesture is being taken for the first time
             exit_flag = 0  # To let the user end the process early by clicking the "Esc" key
 
-            # Continue until the respective subfolder has the designated number of samples
-            while counter <= end:
+            # Continue until the user terminates the process
+            while True:
                 ret, frame = cap.read()
 
                 # Check validity and avoid mirroring if frame is present
                 if not ret:
                     print("There has been a problem retrieving your frame")
-                    print("Try adjusting the camera number in specification of cap (default 0)")
                     break
                 frame = cv2.flip(frame, 1)
 
@@ -159,55 +153,54 @@ def collect_data(gesture_list, examples="Examples", data_directory=None,
                     rectangle_position += 1
                     rect = [rect_torso, rect_fingerspell_1, rect_fingerspell_2][rectangle_position % 3]
 
-                # Live view with frame and text (colorcoded to indicate whether images are being saved)
-                if current - current_amounts[gesture] > 65:
-                    cv2.rectangle(frame, rect[0], rect[3], (0, 255, 0), 2)
+                # Create grayscale version
+                frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+                # Binarize the grayscale image using adaptive thresholding
+                frame_binary = frame_gray[(rect[0][1] + 2):(rect[2][1] - 2),
+                                          (rect[0][0] + 2):(rect[1][0] - 2)]
+
+                # Preprocessing that is used in the data pipeline for the model
+                frame_binary = cv2.fastNlMeansDenoising(frame_binary, None, 5, 15, 7)
+                frame_binary = cv2.medianBlur(frame_binary, 3)
+                frame_binary = cv2.GaussianBlur(frame_binary, (3, 3), 0)
+                # Adaptive thresholding
+                frame_binary = cv2.adaptiveThreshold(frame_binary, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
+                                                     cv2.THRESH_BINARY_INV, 3, 2)
+                # Closing operation on the thresholded image
+                kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+                frame_binary = cv2.morphologyEx(frame_binary, cv2.MORPH_CLOSE, kernel)
+
+                # Show all images
+
+                # Live view with frame and text
+                cv2.rectangle(frame, rect[0], rect[3], (0, 255, 0), 2)
+                # Add information about prediction if expected, otherwise just show the name of the gesture
+                if predict:
+                    prediction = model(np.expand_dims(np.expand_dims(cv2.resize(frame_binary,
+                                                                                (196, 196)),
+                                                                     axis=0), axis=-1),
+                                       training=False).numpy()
+                    txt = gesture_list[np.argmax(prediction, axis=1)[0]]
                 else:
-                    cv2.rectangle(frame, rect[0], rect[3], (0, 0, 255), 2)
-                txt = gesture.capitalize()
+                    txt = gesture.capitalize()
                 if not lang:
                     txt = dictionary[txt]
-                if current - current_amounts[gesture] > 65:
-                    cv2.putText(frame, txt, (rect[0][0], rect[0][1] - 15),
-                                cv2.FONT_HERSHEY_DUPLEX, 1, (0, 255, 0), 2)
-                else:
-                    cv2.putText(frame, txt, (rect[0][0], rect[0][1] - 15),
-                                cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 255), 2)
+                cv2.putText(frame, txt, (rect[0][0], rect[0][1] - 15),
+                            cv2.FONT_HERSHEY_DUPLEX, 1, (0, 255, 0), 2)
                 cv2.imshow("Camera view", frame)
+
+                # Grayscale version
+                cv2.imshow("Grayscale view", cv2.resize(frame_gray, (480, 360)))
+
+                # Binary version
+                cv2.imshow("Binary view", cv2.resize(frame_binary, (480, 360)))
 
                 # Show example on new gesture
                 if not flag:
                     example = cv2.imread(f"{os.path.join(examples, gesture)}" + ".jpg")
                     cv2.imshow("Example", cv2.resize(example, (380, 270)))
                     flag = 1
-
-                    # Show big example to warn about new gesture and enable readjustment
-                    cv2.namedWindow("BigExample")
-                    cv2.resizeWindow("BigExample", 1280, 720)
-                    cv2.moveWindow("BigExample", 125, 50)
-                    cv2.imshow("BigExample", cv2.resize(example, (1280, 720)))
-                    cv2.waitKey(1500)
-                    cv2.destroyWindow("BigExample")
-
-                # To reduce the number of almost identical frames, only save every n frames
-                # To give space for adjustments and "learning" a new sign, only start collecting after some time
-                if not current % 3 and current - current_amounts[gesture] > 70:
-
-                    # Create the naming for the file with the desired padding, i.e. ("gesture_run-number.jpg")
-                    img_name = gesture + "_" + str(counter) + ".jpg"
-                    img_path = r"%s" % os.path.join(gesture_paths[gesture], img_name)
-
-                    # Save the cropped rectangle from the frame
-                    if not cv2.imwrite(img_path,
-                                       cv2.resize(frame[(rect[0][1] + 2):(rect[2][1] - 2),
-                                                        (rect[0][0] + 2):(rect[1][0] - 2)],
-                                                  (196, 196))):
-                        print("Something went wrong during this attempt:",
-                              f"gesture - {gesture}, run - {counter}")
-
-                    counter += 1
-
-                current += 1
 
             if exit_flag:
                 break

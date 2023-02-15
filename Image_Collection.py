@@ -256,7 +256,7 @@ def get_dictionary(translations):
         dictionary: dict of gesture_English: gesture_Czech pairs
     """
     if not isinstance(translations, str):
-            raise ValueError("Different datatype than string has been given for the name of the folder with translations.")
+        raise ValueError("Different datatype than string has been given for the name of the folder with translations.")
     if not os.path.exists(translations):
         raise ValueError("The given directory for the translations does not exist, please specify a correct directory path.")
 
@@ -514,13 +514,12 @@ def image_capturing(gesture_list, examples="Examples", save=True, predict=False,
 
                     # Show big example to warn about new gesture and enable readjustment
                     if save:
-	                    cv2.namedWindow("BigExample")
-	                    cv2.resizeWindow("BigExample", 1280, 720)
-	                    cv2.moveWindow("BigExample", 125, 50)
-	                    cv2.imshow("BigExample", cv2.resize(example, (1280, 720)))
-	                    cv2.waitKey(1500)
-	                    cv2.destroyWindow("BigExample")
-                    
+                        cv2.namedWindow("BigExample")
+                        cv2.resizeWindow("BigExample", 1280, 720)
+                        cv2.moveWindow("BigExample", 125, 50)
+                        cv2.imshow("BigExample", cv2.resize(example, (1280, 720)))
+                        cv2.waitKey(1500)
+                        cv2.destroyWindow("BigExample")
 
                 # To reduce the number of almost identical frames, only save every n frames
                 # To give space for adjustments and "learning" a new sign, only start collecting after some time
