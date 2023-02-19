@@ -11,6 +11,9 @@ and then possibly saves these into given folders for comparison.
 import os
 import cv2
 from utils import create_rectangle, new_folder
+from tensorflow.keras import layers, Sequential
+from keras_cv.layers import Grayscale
+from model.preprocessing import AdaptiveThresholding, Blurring
 
 
 def showcase_preprocessing():
@@ -43,6 +46,10 @@ def showcase_preprocessing():
             cv2.namedWindow(f"Preprocessing pipeline {i + 1}")
             cv2.resizeWindow(f"Preprocessing pipeline {i + 1}", 320, 240)
             cv2.moveWindow(f"Preprocessing pipeline {i + 1}", 655 + 325 * (i % 2), 16 + 270 * (i // 2))
+
+        # !!!!!!!!!!!!!!!!!!!!!
+        # TO-DO
+        # Setting up preprocessing sequential pipelines
 
         rectangle_position = 0  # Which position of the rectangle to use
         save_counter = 0  # Count the number of times user has requested saving pipelines' results

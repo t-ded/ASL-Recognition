@@ -20,8 +20,9 @@ Default procedure (when no parameters given) is trying to run the whole process
 
 import sys
 import os
-import image_collection
+import collect_dataset
 import CNN
+import utils
 import tensorflow as tf
 
 
@@ -50,15 +51,15 @@ def main(argv):
 
     for arg in argv:
         if arg == "collect":
-            data_dir, example_dir, desired_amount, current_amount, paths = image_collection.setup_folders(os.path.dirname("image_collection.py"), gestures, 100)
+            data_dir, example_dir, desired_amount, current_amount, paths = utils.setup_folders(os.path.dirname("image_collection.py"), gestures, 10)
             print("The folders have been set up.")
             print("Starting the data collection process.")
-            image_collection.image_capturing(gestures, examples=example_dir, save=True,
+            collect_dataset.collect_data(gestures, examples=example_dir,
                                              data_directory=data_dir, current_amounts=current_amount,
-                                             desired_amounts=desired_amount, gesture_paths=paths)
+                                             desired_amounts=desired_amount, gesture_paths=paths, translations="translations.txt", img_size=196)
             print("Your data has been collected, please check the folders.")
         elif arg == "train":
-            data_dir, example_dir, desired_amount, current_amount, paths = image_collection.setup_folders(os.path.dirname("image_collection.py"), gestures, 100)
+            data_dir, example_dir, desired_amount, current_amount, paths = utils.setup_folders(os.path.dirname("image_collection.py"), gestures, 10)
             model = CNN.build_model(labels=len(gestures))
             model.compile(optimizer="adam",
                           loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),

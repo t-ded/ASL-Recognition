@@ -11,6 +11,9 @@ import re
 import warnings
 import cv2
 import numpy as np
+from tensorflow.keras import layers
+from keras_cv.layers import Grayscale
+from model.preprocessing import AdaptiveThresholding, Blurring
 
 
 def new_folder(dir_name, verbose=False):
@@ -267,3 +270,39 @@ def get_dictionary(translations):
             dictionary[english] = czech
 
     return dictionary
+
+
+def parse_preprocessing(entry):
+    """
+    Function to parse a line specifying a layer that should be added
+    to the tensorflow.keras.Sequential model.
+    Inputs given in correct formats are assumed. All possible arguments must be entered.
+
+    Parameters:
+        entry: str
+            A line specifying the given layer and its parameters.
+            Possible layer names & their parameters:
+                Blur blurring_type kernel_size sigma
+                Threshold thresholding_type block_size constant
+                Rescaling
+                Grayscale
+
+    Returns:
+        layer: tensorflow.keras.layers
+            An instance of the keras layers module
+    """
+    if not isinstance(entry, str):
+        raise ValueError("Given input for preprocessing parsing is not a string.")
+
+    entry_parsed = entry.split(" ")
+    layer_name = entry_parsed[0]
+
+    if layer_name == "Blur":
+        return Blurring(*entry_parsed[1:])
+    if layer_name == "Threshold":
+        return AdaptiveThresholding(*entry_parsed[1:])
+    if layer_name == "Scaling":
+        return layers.Rescaling(scale=(1. / 255))
+    if layer_name == "Grayscale":
+        return Grayscale()
+    return None
