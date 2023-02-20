@@ -9,8 +9,8 @@
     },
     "Model": {
         "Current weights": "model/weights",
-        "Current hyperparameters": "model/architecture.txt",
-        "Current architecture": "model/hyperparameters.txt",
+        "Current architecture": "model/architecture.txt",
+        "Current hyperparameters": "model/hyperparameters.txt",
         "Model experiments": "model/experiments"
     },
     "General parameters": {

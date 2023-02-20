@@ -297,11 +297,11 @@ def parse_preprocessing(entry):
     entry_parsed = entry.split(" ")
     layer_name = entry_parsed[0]
 
-    if layer_name == "Blur":
+    if layer_name == "Blurring":
         return Blurring(*entry_parsed[1:])
     if layer_name == "Threshold":
         return AdaptiveThresholding(*entry_parsed[1:])
-    if layer_name == "Scaling":
+    if layer_name == "Rescaling":
         return layers.Rescaling(scale=(1. / 255))
     if layer_name == "Grayscale":
         return Grayscale()

@@ -25,15 +25,15 @@ class AdaptiveThresholding(tf.keras.layers.Layer):
         def apply_thresholding(image):
 
             if self.thresholding_type == "mean":
-                return cv2.adaptiveThresholding(image, 1,
-                                                cv2.ADAPTIVE_THRESH_MEAN_C,
-                                                cv2.THRESH_BINARY_INV,
-                                                self.block_size, self.constant)
+                return cv2.adaptiveThreshold(tf.cast(image, tf.uint8).numpy(), 255,
+                                             cv2.ADAPTIVE_THRESH_MEAN_C,
+                                             cv2.THRESH_BINARY_INV,
+                                             self.block_size, self.constant)
 
-            return cv2.adaptiveThresholding(image, 1,
-                                            cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                            cv2.THRESH_BINARY_INV,
-                                            self.block_size, self.constant)
+            return cv2.adaptiveThreshold(tf.cast(image, tf.uint8).numpy(), 255,
+                                         cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                         cv2.THRESH_BINARY_INV,
+                                         self.block_size, self.constant)
 
         return tf.py_function(func=apply_thresholding, inp=[input_batch], Tout=tf.float32)
 
@@ -52,9 +52,9 @@ class Blurring(tf.keras.layers.Layer):
         def apply_blurring(image):
 
             if self.blurring_type == "median":
-                return cv2.medianBlur(image, self.kernel_size)
+                return cv2.medianBlur(tf.cast(image, tf.uint8).numpy(), self.kernel_size)
 
-            return cv2.gaussianBlur(image, (self.kernel_size, self.kernel_size),
-                                    sigma_X=self.sigma, sigma_Y=self.sigma)
+            return cv2.GaussianBlur(tf.cast(image, tf.uint8).numpy(), (self.kernel_size, self.kernel_size),
+                                    sigmaX=self.sigma, sigmaY=self.sigma)
 
         return tf.py_function(func=apply_blurring, inp=[input_batch], Tout=tf.float32)

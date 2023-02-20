@@ -47,9 +47,60 @@ def showcase_preprocessing():
             cv2.resizeWindow(f"Preprocessing pipeline {i + 1}", 320, 240)
             cv2.moveWindow(f"Preprocessing pipeline {i + 1}", 655 + 325 * (i % 2), 16 + 270 * (i // 2))
 
-        # !!!!!!!!!!!!!!!!!!!!!
-        # TO-DO
         # Setting up preprocessing sequential pipelines
+        pipeline1 = Sequential(
+            [
+                Grayscale(),
+                Blurring(blurring_type="median", kernel_size=3, sigma=None),
+                AdaptiveThresholding(thresholding_type="mean", block_size=3, constant=-3),
+                layers.Rescaling(scale=(1. / 255))
+            ]
+        )
+
+        pipeline2 = Sequential(
+            [
+                Grayscale(),
+                Blurring(blurring_type="median", kernel_size=5, sigma=None),
+                AdaptiveThresholding(thresholding_type="mean", block_size=3, constant=-3),
+                layers.Rescaling(scale=(1. / 255))
+            ]
+        )
+
+        pipeline3 = Sequential(
+            [
+                Grayscale(),
+                Blurring(blurring_type="median", kernel_size=3, sigma=None),
+                AdaptiveThresholding(thresholding_type="mean", block_size=5, constant=1),
+                layers.Rescaling(scale=(1. / 255))
+            ]
+        )
+
+        pipeline4 = Sequential(
+            [
+                Grayscale(),
+                Blurring(blurring_type="median", kernel_size=5, sigma=None),
+                AdaptiveThresholding(thresholding_type="mean", block_size=5, constant=1),
+                layers.Rescaling(scale=(1. / 255))
+            ]
+        )
+
+        pipeline5 = Sequential(
+            [
+                Grayscale(),
+                Blurring(blurring_type="gaussian", kernel_size=3, sigma=1),
+                AdaptiveThresholding(thresholding_type="mean", block_size=3, constant=5),
+                layers.Rescaling(scale=(1. / 255))
+            ]
+        )
+
+        pipeline6 = Sequential(
+            [
+                Grayscale(),
+                Blurring(blurring_type="gaussian", kernel_size=5, sigma=3),
+                AdaptiveThresholding(thresholding_type="mean", block_size=3, constant=5),
+                layers.Rescaling(scale=(1. / 255))
+            ]
+        )
 
         rectangle_position = 0  # Which position of the rectangle to use
         save_counter = 0  # Count the number of times user has requested saving pipelines' results
@@ -74,18 +125,17 @@ def showcase_preprocessing():
                 rectangle_position += 1
                 rect = [rect_torso, rect_fingerspell_1, rect_fingerspell_2][rectangle_position % 3]
 
-            # Create grayscale version
-            frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            frame_gray = frame_gray[(rect[0][1] + 2):(rect[2][1] - 2),
-                                    (rect[0][0] + 2):(rect[1][0] - 2)]
+            # Create rectangle cut
+            frame_cut = frame[(rect[0][1] + 2):(rect[2][1] - 2),
+                              (rect[0][0] + 2):(rect[1][0] - 2)]
 
             # Try different preprocessing pipelines
-            frame_binary_1 = frame_gray.copy()
-            frame_binary_2 = frame_gray.copy()
-            frame_binary_3 = frame_gray.copy()
-            frame_binary_4 = frame_gray.copy()
-            frame_binary_5 = frame_gray.copy()
-            frame_binary_6 = frame_gray.copy()
+            frame_binary_1 = pipeline1(frame_cut)
+            frame_binary_2 = pipeline2(frame_cut)
+            frame_binary_3 = pipeline3(frame_cut)
+            frame_binary_4 = pipeline4(frame_cut)
+            frame_binary_5 = pipeline5(frame_cut)
+            frame_binary_6 = pipeline6(frame_cut)
             pipelines_list = [frame_binary_1, frame_binary_2, frame_binary_3,
                               frame_binary_4, frame_binary_5, frame_binary_6]
 
@@ -95,7 +145,7 @@ def showcase_preprocessing():
 
             # Show results for all pipelines
             for i, pipeline in enumerate(pipelines_list):
-                cv2.imshow(f"Preprocessing pipeline {i + 1}", cv2.resize(pipeline, (320, 240)))
+                cv2.imshow(f"Preprocessing pipeline {i + 1}", cv2.resize(pipeline.numpy(), (320, 240)))
 
             # Save the current layout in case the "q" key is hit
             if key == ord("q"):
@@ -103,10 +153,11 @@ def showcase_preprocessing():
                 # Set up the parent folder for this experiment and add preprocessing information
                 if not save_counter:
                     new_folder("data_pipelines")
-# TO-DO: Might eventually add repair padding function for folders (aaa_1) -> use that here on "data_pipelines"
+# TODO: Might eventually add repair padding function for folders (aaa_1) -> use that here on "data_pipelines"
                     current_name = f"data_pipelines/experiment_{len(os.listdir('data_pipelines')) + 1}"
                     new_folder(current_name)
-# TO-DO: Add saving information for this preprocessing run (e.g. json)
+# TODO: Add saving information for this preprocessing run (e.g. json)
+# TODO: Implement this by adding a summary() method to the custom layers
 
                 # Set up the folder for a new save
                 save_name = current_name + f"/save_{save_counter + 1}"
@@ -118,7 +169,7 @@ def showcase_preprocessing():
                     img_path = r"%s" % os.path.join(save_name, img_name)
 
                     # Save each pipeline's result and information
-                    if not cv2.imwrite(img_path, pipeline):
+                    if not cv2.imwrite(img_path, pipeline.numpy()):
                         print("Something went wrong during this attempt:",
                               f"run - pipeline {i}")
 
