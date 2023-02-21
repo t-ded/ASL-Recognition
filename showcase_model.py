@@ -13,7 +13,9 @@ import re
 import warnings
 import numpy as np
 import cv2
-from tensorflow.keras.models import Sequential
+from tensorflow.keras import layers, Sequential
+from keras_cv.layers import Grayscale
+from model.preprocessing import AdaptiveThresholding, Blurring
 from utils import create_rectangle, get_dictionary
 
 
@@ -106,23 +108,29 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
 
         # Establish the windows and place them accordingly
         cv2.namedWindow("Camera view")
-        cv2.resizeWindow("Camera view", 640, 480)
-        cv2.moveWindow("Camera view", 15, 200)
-
-        cv2.namedWindow("Grayscale view")
-        cv2.resizeWindow("Grayscale view", 480, 360)
-        cv2.moveWindow("Grayscale view", 655, 30)
+        cv2.resizeWindow("Camera view", 1080, 720)
+        cv2.moveWindow("Camera view", 100, 150)
 
         cv2.namedWindow("Binary view")
         cv2.resizeWindow("Binary view", 480, 360)
-        cv2.moveWindow("Binary view", 655, 430)
+        cv2.moveWindow("Binary view", 750, 30)
 
         cv2.namedWindow("Example")
-        cv2.resizeWindow("Example", 380, 270)
-        cv2.moveWindow("Example", 1125, 280)
+        cv2.resizeWindow("Example", 480, 360)
+        cv2.moveWindow("Example", 750, 430)
 
         lang = True  # To let the user change language, True stands for English, False for Czech
         rectangle_position = 0  # Which position of the rectangle to use
+
+        # Setup the preprocessing pipeline
+        preprocessing_pipeline = Sequential(
+            [
+                Grayscale(),
+                Blurring(blurring_type="median", kernel_size=3, sigma=None),
+                AdaptiveThresholding(thresholding_type="mean", block_size=3, constant=-3),
+                layers.Rescaling(scale=(1. / 255))
+            ]
+        )
 
         # Perform the data collecting process for each gesture in the given gesture list
         for gesture in gesture_list:
@@ -160,23 +168,12 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
                     rectangle_position += 1
                     rect = [rect_torso, rect_fingerspell_1, rect_fingerspell_2][rectangle_position % 3]
 
-                # Create grayscale version
-                frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+                # Create rectangle cut
+                frame_cut = frame[(rect[0][1] + 2):(rect[2][1] - 2),
+                                  (rect[0][0] + 2):(rect[1][0] - 2)]
 
-                # Binarize the grayscale image using adaptive thresholding
-                frame_binary = frame_gray[(rect[0][1] + 2):(rect[2][1] - 2),
-                                          (rect[0][0] + 2):(rect[1][0] - 2)]
-
-                # Preprocessing that is used in the data pipeline for the model
-                frame_binary = cv2.fastNlMeansDenoising(frame_binary, None, 5, 15, 7)
-                frame_binary = cv2.medianBlur(frame_binary, 3)
-                frame_binary = cv2.GaussianBlur(frame_binary, (3, 3), 0)
-                # Adaptive thresholding
-                frame_binary = cv2.adaptiveThreshold(frame_binary, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
-                                                     cv2.THRESH_BINARY_INV, 3, 2)
-                # Closing operation on the thresholded image
-                kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
-                frame_binary = cv2.morphologyEx(frame_binary, cv2.MORPH_CLOSE, kernel)
+                # Apply the preprocessing pipeline
+                frame_binary = preprocessing_pipeline(frame_cut)
 
                 # Show all images
 
@@ -184,10 +181,7 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
                 cv2.rectangle(frame, rect[0], rect[3], (0, 255, 0), 2)
                 # Add information about prediction if expected, otherwise just show the name of the gesture
                 if predict:
-                    prediction = model(np.expand_dims(np.expand_dims(cv2.resize(frame_binary,
-                                                                                (img_size, img_size)),
-                                                                     axis=0), axis=-1),
-                                       training=False).numpy()
+                    prediction = model(frame_binary, training=False).numpy()
                     txt = gesture_list[np.argmax(prediction, axis=1)[0]] + f"({max(prediction)})"
                 else:
                     txt = gesture.capitalize()
@@ -197,16 +191,13 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
                             cv2.FONT_HERSHEY_DUPLEX, 1, (0, 255, 0), 2)
                 cv2.imshow("Camera view", frame)
 
-                # Grayscale version
-                cv2.imshow("Grayscale view", cv2.resize(frame_gray, (480, 360)))
-
                 # Binary version
-                cv2.imshow("Binary view", cv2.resize(frame_binary, (480, 360)))
+                cv2.imshow("Binary view", cv2.resize(frame_binary.numpy(), (480, 360)))
 
                 # Show example on new gesture
                 if not flag:
                     example = cv2.imread(f"{os.path.join(examples, gesture)}" + ".jpg")
-                    cv2.imshow("Example", cv2.resize(example, (380, 270)))
+                    cv2.imshow("Example", cv2.resize(example, (480, 360)))
                     flag = 1
 
             if exit_flag:
@@ -216,3 +207,19 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
     finally:
         cap.release()
         cv2.destroyAllWindows()
+
+
+showcase_model(["I index", "My", "You", "Your",
+                "In", "To", "With", "Yes",
+                "No", "Well", "I love you",
+                "Oh I see", "Name", "Hug",
+                "Internet", "Bus", "Money",
+                "Work", "Ask", "Go",
+                "Look", "Have", "Correct",
+                "Want", "Where",
+                "A", "B", "C", "D",
+                "E", "F", "G", "H",
+                "I", "K", "L", "M",
+                "N", "O", "P", "Q",
+                "R", "S", "T", "U",
+                "V", "W", "X", "Y"])

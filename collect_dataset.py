@@ -13,7 +13,7 @@ import cv2
 from utils import create_rectangle, get_dictionary
 
 
-def collect_data(gesture_list, examples="Examples", data_directory=None,
+def collect_data(gesture_list, examples="Examples", data_directory="Data",
                  current_amounts=None, desired_amounts=None, gesture_paths=None,
                  translations="translations.txt", img_size=196):
     """
@@ -31,7 +31,7 @@ def collect_data(gesture_list, examples="Examples", data_directory=None,
             List of gestures to go through
         examples: str (default "Examples")
             Name of the folder with examples.
-        data_directory: str (default None)
+        data_directory: str (default "Data")
             Name of the folder in which to save the images.
         current_amounts: dict of str: int pairs (default None)
             Dictionary of current amounts of datapoints per each gesture.
@@ -185,7 +185,7 @@ def collect_data(gesture_list, examples="Examples", data_directory=None,
                 # Show example on new gesture
                 if not flag:
                     example = cv2.imread(f"{os.path.join(examples, gesture)}" + ".jpg")
-                    cv2.imshow("Example", cv2.resize(example, (380, 270)))
+                    cv2.imshow("Example", cv2.resize(example, (640, 480)))
                     flag = 1
 
                     # Show big example to warn about new gesture and enable readjustment
