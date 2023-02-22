@@ -179,6 +179,3 @@ def showcase_preprocessing():
     finally:
         cap.release()
         cv2.destroyAllWindows()
-
-
-showcase_preprocessing()
