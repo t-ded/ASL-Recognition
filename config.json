@@ -6,13 +6,12 @@
         "Gesture list": "gestures.txt"
     },
     "Model": {
-        "Current weights": "model/weights",
-        "Current architecture": "model/architecture.txt",
-        "Current hyperparameters": "model/hyperparameters.txt",
+        "Current model": "model/current",
         "Model experiments": "model/experiments"
     },
     "General parameters": {
         "Image size": 196,
+        "Validation split": 0.25,
         "Desired amount": 100,
         "Top-up amount": 100
     }

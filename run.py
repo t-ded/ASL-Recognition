@@ -1,5 +1,7 @@
 # -*- coding: utf-8 -*-
 # disable=C0301, C0103, E1101
+# TODO: Adjust README.md file and the docstring for this run function
+# TODO: Fill in the docstring and comments for classes and their methods in preprocessing.py file
 """
 A simple function to enable running
 the different scripts from command line.
@@ -25,22 +27,37 @@ import json
 import utils
 from collect_dataset import collect_data
 from showcase_collect_preprocessing import showcase_preprocessing
+from showcase_model import showcase_model
+from preprocessing import AdaptiveThresholding, Blurring
 
 parser = argparse.ArgumentParser()
+parser.add_argument("--config_dir", default="", type=str, help="Directory with the config.json file")
+parser.add_argument("--experiment", default=None, type=int, help="Number of this experiment (the settings will be saved in the respective newly created folder or loaded from an existing folder)")
 
 # Specify procedure
-parser.add_argument("--c", "--collect", action="store_true", help="If given, run the data collection process")
-parser.add_argument("--p", "--preprocess", action="store_true", help="If given, showcase various preprocessing pipelines")
-parser.add_argument("--t", "--train", action="store_true", help="If given, run the model training process")
-parser.add_argument("--s", "--showcase", action="count", default=0, help="If given, run the showcasing process (give twice to run with model prediction)")
-parser.add_argument("--config_dir", default="", type="str", help="Directory with the config.json file")
+procedure = parser.add_mutually_exclusive_group()
+procedure.add_argument("--col", "--collect", action="store_true", help="If given, run the data collection process")
+procedure.add_argument("--prep", "--preprocess", action="store_true", help="If given, showcase various preprocessing pipelines")
+procedure.add_argument("--tr", "--train", action="store_true", help="If given, run the model training process")
+procedure.add_argument("--show", "--showcase", action="store_true", help="If given, run the showcasing process")
+procedure.add_argument("--pred", "--predict", action="store_true", help="If given, run the showcasing process with model prediction")
 
-# Specify the parameters for this experiment
-# TODO:
-    # Give options either to:
-        # specify hyperparameters (and possibly model architecture) with some default values
-            # then create new folders for this experiment and save the layout there
-        # give a directory / experiment number with pre-made json file
+# Specify the hyperparameters if the json file was not given
+hyperparameters = parser.add_argument_group("Hyperparameters")
+hyperparameters.add_argument("--batch_size", default=64, type=int, help="Batch size")
+hyperparameters.add_argument("--epochs", default=10, type=int, help="Number of epochs")
+hyperparameters.add_argument("--optimizer", default="Adam", choices=["Adam", "SGD"], help="Optimizer for training")
+hyperparameters.add_argument("--learning_rate", default=0.01, type=float, help="Starting learning rate")
+hyperparameters.add_argument("--regularization", default=None, choices=["l1", "l2"], help="Regularization for the loss function")
+hyperparameters.add_argument("--dropout", default=0.5, type=float, help="Dropout rate for the dropout layers")
+hyperparameters.add_argument("--seed", default=123, type=int, help="Random seed for operations including randomness (e.g. shuffling)")
+
+# TODO: If train argument given and experiment not specified, inform the user and change the experiment number to the last folder number + 1 in list of experiments
+# TODO: If train argument given and experiment == -1, then rewrite the current model (Make sure to get the input from the user to proceed with this if some model already present)
+# TODO: Add options for architecture (probably using action="append" and then expecting input such as "icccpdo" for input, conv, conv, conv, pool, dense, output)
+# TODO: Create a model building function for the expected input specified in the previous todo
+# TODO: Create the same functionality for preprocessing?
+# TODO: Think of ways of specifying the parameters for the individual layers
 
 
 def main(args):
@@ -53,7 +70,7 @@ def main(args):
     # Default procedure
     if not args:
         print("No arguments specified, will try to run the showcasing without prediction")
-        args.showcase = 1
+        args.showcase = True
 
     # Set up the list of gestures
     with open(config["Paths"]["Gesture list"], "r") as gesture_list:
@@ -91,11 +108,11 @@ def main(args):
         print("Your data has been collected, please check the folders.")
 
     # Showcase various preprocessing pipelines and enable saving their outputs
-    if args.preprocess:
+    elif args.preprocess:
         showcase_preprocessing()
 
     # Build a new model and train it on the given data
-    if args.train:
+    elif args.train:
         # !!! TODO !!!
 
         # Preprocessing stage of the model
@@ -110,7 +127,18 @@ def main(args):
         # Trainable stage of the model
         # TODO: Use the model building function from the previous TODO
 
+        # TODO: Create checkpoints for training and save the training from there
+        # TODO: Save the model into experiment folder with given number or
+        # try saving it as current if experiment == -1
+        # (prompt the user for proceeding confirmation in case a model already exists)
+
         # Loading the training and testing datasets from directories and optimizing them for performance
+        train_images, test_images = tf.keras.preprocessing.image_dataset_from_directory(data_dir,
+                                                                                        validation_split=config["General parameters"]["Validation split"],
+                                                                                        subset="both",
+                                                                                        seed=args.seed,
+                                                                                        image_size=(config["General parameters"]["Image size"],
+                                                                                                    config["General parameters"]["Image size"]))
         _ = """
         model = CNN.build_model(labels=len(gestures))
         model.compile(optimizer="adam",
@@ -133,26 +161,33 @@ def main(args):
         print(model.summary())
         model.save_weights("Weights/weights")"""
 
-    # Demonstrate the image taking process and possibly showcase the model and its predictions
-    if args.showcase:
-        # !!! TODO !!!
+    # Demonstrate the image taking process
+    elif args.showcase:
 
-        # TODO: Evaluate whether args.showcase is > 1 (prediction) or not (plain showcasing)
-        _ = """
-        data_dir, example_dir, desired_amount, current_amount, paths = image_collection.setup_folders(os.path.dirname("image_collection.py"), gestures, 100)
-        if "train" in argv:
-            image_collection.image_capturing(gestures, examples=example_dir, save=False, predict=True, data_directory=data_dir, model=model)
-        else:
-            model = CNN.build_model(labels=len(gestures), input_shape=(196, 196))
-            try:
-                model.load_weights("Weights/weights").expect_partial()
-            except Exception as exception:
-                if exception.__class__.__name__ == "NotFoundError":
-                    print("Please either use the train command along with a showcase command",
-                          "or insert a model weights folder in the directory of this script.")
-                    print("The program will now terminate")
-                return
-        image_collection.image_capturing(gestures, examples=example_dir, save=False, predict=True, data_directory=data_dir, model=model)"""
+        showcase_model(gestures, examples=example_dir,
+                       predict=False, model=None,
+                       translations=config["Paths"]["Translations"],
+                       img_size=config["General parameters"]["Image size"])
+
+    # Demonstrate the image taking process while also demonstrating the model and its predictions
+    elif args.predict:
+
+        try:
+            model = tf.keras.models.load_model(filepath=config["Model"]["Current model"],
+                                               custom_objects={"AdaptiveThresholding": AdaptiveThresholding,
+                                                               "Blurring": Blurring})
+        except IOError:
+            print("The prediction procedure was chosen but model cannot be found",
+                  f"in the folder specified in the config.json file ({config['Model']['Current model']}).",
+                  "Please make sure to adjust the folder name in the config file or save the model in there.",
+                  "Eventually, this can be resolved by running the train procedure with experiment number specified as -1.")
+            print("Terminating the prediction process.")
+            return
+
+        showcase_model(gestures, examples=example_dir,
+                       predict=True, model=model,
+                       translations=config["Paths"]["Translations"],
+                       img_size=config["General parameters"]["Image size"])
 
 
 if __name__ == "__main__":
