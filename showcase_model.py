@@ -14,8 +14,7 @@ import warnings
 import numpy as np
 import cv2
 from tensorflow.keras import layers, Sequential
-from keras_cv.layers import Grayscale
-from model.preprocessing import AdaptiveThresholding, Blurring
+from model.preprocessing import AdaptiveThresholding, Blurring, Grayscale
 from utils import create_rectangle, get_dictionary
 
 

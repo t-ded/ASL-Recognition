@@ -12,8 +12,7 @@ import os
 import cv2
 from utils import create_rectangle, new_folder
 from tensorflow.keras import layers, Sequential
-from keras_cv.layers import Grayscale
-from model.preprocessing import AdaptiveThresholding, Blurring
+from model.preprocessing import AdaptiveThresholding, Blurring, Grayscale
 
 
 def showcase_preprocessing():

@@ -34,7 +34,8 @@ from preprocessing import AdaptiveThresholding, Blurring
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--config_dir", default="", type=str, help="Directory with the config.json file")
-parser.add_argument("--experiment", default=None, type=int, help="Number of this experiment (the settings will be saved in the respective newly created folder or loaded from an existing folder)")
+parser.add_argument("--experiment", default=None, type=int,
+                    help="Number of this experiment (the settings will be saved in the respective newly created folder or loaded from an existing folder)")
 
 # Specify procedure
 procedure = parser.add_mutually_exclusive_group()
@@ -48,7 +49,7 @@ procedure.add_argument("--pred", "--predict", action="store_true", help="If give
 hyperparameters = parser.add_argument_group("Hyperparameters")
 hyperparameters.add_argument("--batch_size", default=64, type=int, help="Batch size")
 hyperparameters.add_argument("--epochs", default=10, type=int, help="Number of epochs")
-hyperparameters.add_argument("--optimizer", default="Adam", choices=["Adam", "SGD"], help="Optimizer for training")
+hyperparameters.add_argument("--optimizer", default="adam", choices=["adam", "SGD"], help="Optimizer for training")
 hyperparameters.add_argument("--learning_rate", default=0.01, type=float, help="Starting learning rate")
 hyperparameters.add_argument("--regularization", default=None, choices=["l1", "l2"], help="Regularization for the loss function")
 hyperparameters.add_argument("--dropout", default=0.5, type=float, help="Dropout rate for the dropout layers")
@@ -60,6 +61,14 @@ hyperparameters.add_argument("--split", default=0.2, type=float, help="Portion o
 # TODO: Create the same functionality for preprocessing?
 # TODO: Think of ways of specifying the parameters for the individual layers
 # TODO: Refactor the custom preprocessing layers so that they support prefetched dataset as their input
+# TODO: Add a timeit metric based on consultation
+
+# Specify the architecture for the given experiment if training procedure is set
+architecture = parser.add_argument_group("Architecture")
+architecture.add_argument("--arch", "architecture", type=str,
+                          help="Specify the trainable layers for the network using the following commands: i (input layer), c (convolutional layer), p (pooling layer), d (dense layer), dr (dropout layer) or o (output layer)")
+architecture.add_argument("--prep_layers", "preprocessing_layers", type=str,
+                          help="Specify the architecture of the preprocessing pipeline using the following commands: g (grayscale layer), b (blurring layer), t (thresholding layer), r (rescale layer)")
 
 
 def main(args):

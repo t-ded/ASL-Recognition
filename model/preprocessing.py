@@ -9,6 +9,7 @@ Modularized and parametrized preprocessing pipeline utilities for RGB images.
 
 import cv2
 import tensorflow as tf
+import tensorflow_addons as tfa
 
 
 class AdaptiveThresholding(tf.keras.layers.Layer):
@@ -51,7 +52,7 @@ class AdaptiveThresholding(tf.keras.layers.Layer):
 
 class Blurring(tf.keras.layers.Layer):
 
-    def __init__(self, blurring_type="median", kernel_size=3, sigma=None, **kwargs):
+    def __init__(self, blurring_type="median", kernel_size=3, sigma=1, **kwargs):
 
         super(Blurring, self).__init__(**kwargs)
         self.blurring_type = blurring_type
@@ -60,17 +61,10 @@ class Blurring(tf.keras.layers.Layer):
 
     def call(self, input_batch):
 
-        def apply_blurring(image):
+        if self.blurring_type == "median":
+            return tfa.image.median_filter2d(input_batch, self.kernel_size)
 
-            img = tf.cast(image, tf.uint8).numpy()
-
-            if self.blurring_type == "median":
-                return cv2.medianBlur(img, self.kernel_size)
-
-            return cv2.GaussianBlur(img, (self.kernel_size, self.kernel_size),
-                                    sigmaX=self.sigma, sigmaY=self.sigma)
-
-        return tf.py_function(func=apply_blurring, inp=[input_batch], Tout=tf.uint8)
+        return tfa.image.gaussian_filter2d(input_batch, self.kernel_size, self.sigma)
 
     def get_config(self):
 
@@ -80,3 +74,18 @@ class Blurring(tf.keras.layers.Layer):
                        "sigma": self.sigma})
 
         return config
+
+
+class Grayscale(tf.keras.layers.Layer):
+
+    def __init__(self):
+
+        super(Grayscale, self).__init__()
+
+    def call(self, input_batch):
+
+        return tf.image.rgb_to_grayscale(input_batch)
+
+    def get_config(self):
+
+        return super(Blurring, self).get_config()
