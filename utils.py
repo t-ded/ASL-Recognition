@@ -178,11 +178,17 @@ def setup_folders(script_directory, gestures_list, amount_per_gesture):
     # Initialize folder names, initialize paths dictionary
     data_dir = os.path.join(script_directory, "Data")
     example_dir = os.path.join(script_directory, "Examples")
+    model_dir = os.path.join(script_directory, "model")
+    model_experiments_dir = os.path.join(model_dir, "experiments")
+    model_current_dir = os.path.join(model_dir, "current")
     paths = {}
 
-    # Create Data and Example folders if they do not not exist yet
+    # Create Data, Example and model folders if they do not not exist yet
     new_folder(data_dir, verbose=True)
     new_folder(example_dir, verbose=True)
+    new_folder(model_dir, verbose=True)
+    new_folder(model_experiments_dir, verbose=True)
+    new_folder(model_current_dir, verbose=True)
 
     for gesture in gestures_list:
 
@@ -207,7 +213,7 @@ def setup_folders(script_directory, gestures_list, amount_per_gesture):
             cv2.imwrite(f"{new}", np.ones((540, 960)) * 255)
             warnings.warn(f"\nThe current gesture ({gesture}) does not have an example image yet, a dummy image has been created instead.")
 
-    return data_dir, example_dir, desired_amount, current_amount, paths
+    return data_dir, example_dir, model_dir, desired_amount, current_amount, paths
 
 
 def create_rectangle(origin, size_x, size_y):

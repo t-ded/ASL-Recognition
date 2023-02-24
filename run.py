@@ -22,6 +22,8 @@ Default procedure (when no parameters given) is trying to run the whole process
 
 import argparse
 import os
+import re
+import datetime
 import tensorflow as tf
 import json
 import utils
@@ -51,13 +53,13 @@ hyperparameters.add_argument("--learning_rate", default=0.01, type=float, help="
 hyperparameters.add_argument("--regularization", default=None, choices=["l1", "l2"], help="Regularization for the loss function")
 hyperparameters.add_argument("--dropout", default=0.5, type=float, help="Dropout rate for the dropout layers")
 hyperparameters.add_argument("--seed", default=123, type=int, help="Random seed for operations including randomness (e.g. shuffling)")
+hyperparameters.add_argument("--split", default=0.2, type=float, help="Portion of the full dataset to reserve for validation")
 
-# TODO: If train argument given and experiment not specified, inform the user and change the experiment number to the last folder number + 1 in list of experiments
-# TODO: If train argument given and experiment == -1, then rewrite the current model (Make sure to get the input from the user to proceed with this if some model already present)
 # TODO: Add options for architecture (probably using action="append" and then expecting input such as "icccpdo" for input, conv, conv, conv, pool, dense, output)
 # TODO: Create a model building function for the expected input specified in the previous todo
 # TODO: Create the same functionality for preprocessing?
 # TODO: Think of ways of specifying the parameters for the individual layers
+# TODO: Refactor the custom preprocessing layers so that they support prefetched dataset as their input
 
 
 def main(args):
@@ -74,12 +76,15 @@ def main(args):
 
     # Set up the list of gestures
     with open(config["Paths"]["Gesture list"], "r") as gesture_list:
-        gestures = gesture_list.readlines().split(", ")
+        gestures = gesture_list.readlines()[0].split(", ")
 
     # Set up folders and necessary variables
-    data_dir, example_dir, desired_amount, current_amount, paths = utils.setup_folders(script_directory=os.path.dirname("run.py"),
-                                                                                       gestures_list=gestures,
-                                                                                       amount_per_gesture=config["General parameters"]["Desired amount"])
+    script_dir = os.path.dirname("run.py")
+    data_dir, example_dir, model_dir, desired_amount, current_amount, paths = utils.setup_folders(script_directory=script_dir,
+                                                                                                  gestures_list=gestures,
+                                                                                                  amount_per_gesture=config["General parameters"]["Desired amount"])
+    experiments_dir = os.path.join(model_dir, "experiments")
+    current_dir = os.path.join(model_dir, "current")
     print("The folders have been set up.")
 
     # Collection of the data
@@ -113,53 +118,108 @@ def main(args):
 
     # Build a new model and train it on the given data
     elif args.train:
-        # !!! TODO !!!
 
-        # Preprocessing stage of the model
-        # TODO: create and import model.py script with a functionality
-        # for model building
-        # This function will have an argument for preprocessing vs training
-        # and will either load both of these models from
-        # given files with weights, build the models from json files with
-        # architecture or create a new model prototype
-        pass
+        # Set threading options to autotuning
+        tf.config.threading.set_inter_op_parallelism_threads(0)
+        tf.config.threading.set_intra_op_parallelism_threads(0)
 
-        # Trainable stage of the model
-        # TODO: Use the model building function from the previous TODO
+        # Cover the case where the user wishes to save the model as current
+        if args.experiment == -1:
 
-        # TODO: Create checkpoints for training and save the training from there
-        # TODO: Save the model into experiment folder with given number or
-        # try saving it as current if experiment == -1
-        # (prompt the user for proceeding confirmation in case a model already exists)
+            # Ask for confirmation in case the current folder already has some saved model in it
+            if len(next(os.walk(current_dir))):
+                print("The folder with current model layout already contains some files.",
+                      "Continuing to save the result of the current training procedure",
+                      "might result in loss of the previous model.")
+                if input("Proceed (y/[n])?").lower() != "y":
+                    print("Aborting the training procedure.")
+                    return
+
+            # Save the model as the current version
+            save_dir = os.path.join(model_dir, "current")
+
+        else:
+            # Adjust the experiment number accordingly if not given
+            if args.experiment is None:
+                exp_folders = list(next(os.walk(experiments_dir))[1])
+                exp_folders.sort(key=lambda folder: int(re.split(r"[_]", folder)[1]))
+                args.experiment = exp_folders[-1]
+                print("You selected training procedure but did not input an experiment number.",
+                      f"A new folder with experiment number {args.experiment} will thus be created for this experiment.")
+
+            experiment_dir = os.path.join(experiments_dir, "experiment_" + str(args.experiment))
+
+            # Ask for confirmation if the given experiment folder already exists and create new one if prompted
+            if os.path.exists(experiment_dir):
+                print(f"A folder for the given experiment number ({args.experiment}) already exists.")
+                print("Saving the train procedure for this run in the given folder might result in",
+                      "overwriting of previously saved models.")
+                if input("Proceed (y/[n])?").lower() != "y":
+                    if input("Do you wish to automatically create a new folder for this run and then continue (y/[n])?").lower() == "y":
+                        exp_folders = list(next(os.walk(experiments_dir))[1])
+                        exp_folders.sort(key=lambda folder: int(re.split(r"[_]", folder)[1]))
+                        args.experiment = exp_folders[-1]
+                        print(f"A new folder with experiment number {args.experiment} will be created for this experiment.")
+                    else:
+                        print("Aborting the training procedure.")
+                        return
+
+            # Save the model in the respective experiment folder
+            experiment_dir = os.path.join(experiments_dir, "experiment_" + str(args.experiment))
+            utils.new_folder(experiment_dir)
+            save_dir = os.path.join(model_dir, experiment_dir)
 
         # Loading the training and testing datasets from directories and optimizing them for performance
+        AUTOTUNE = tf.data.AUTOTUNE
         train_images, test_images = tf.keras.preprocessing.image_dataset_from_directory(data_dir,
-                                                                                        validation_split=config["General parameters"]["Validation split"],
-                                                                                        subset="both",
-                                                                                        seed=args.seed,
+                                                                                        labels="inferred",
+                                                                                        label_mode="categorical",
+                                                                                        class_names=gestures,
+                                                                                        batch_size=args.batch_size,
                                                                                         image_size=(config["General parameters"]["Image size"],
-                                                                                                    config["General parameters"]["Image size"]))
-        _ = """
-        model = CNN.build_model(labels=len(gestures))
-        model.compile(optimizer="adam",
-                      loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                                                                                                    config["General parameters"]["Image size"]),
+                                                                                        shuffle=True,
+                                                                                        seed=args.seed,
+                                                                                        validation_split=args.split,
+                                                                                        subset="both")
+        train_images = train_images.cache().prefetch(buffer_size=AUTOTUNE)
+        test_images = test_images.cache().prefetch(buffer_size=AUTOTUNE)
+
+        # Set up the log directories for checkpoints and tensorboard
+        cp_path = os.path.join(save_dir, "ckpt/cp-{epoch:03d}.ckpt")
+        tb_path = os.path.join(config["Paths"]["Logs"],
+                               "{}".format(datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")))
+
+        # Create callback for the model to save progress during training
+        cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=cp_path,
+                                                         verbose=1,
+                                                         save_weights_only=True,
+                                                         save_freq=2 * args.batch_size)
+        tb_callback = tf.keras.callbacks.Tensorboard(log_dir=tb_path,
+                                                     histogram_freq=1)
+
+        # !!! TODO !!!
+        # Build and compile the model according to the given instructions
+        model = tf.keras.Sequential()
+        model.compile(optimizer=args.optimizer,
+                      loss=tf.keras.losses.CategoricalCrossentropy(),
+                      learning_rate=args.learning_rate,
                       metrics=["accuracy"])
-        train_images = tf.keras.preprocessing.image_dataset_from_directory(data_dir,
-                                                                           validation_split=0.25,
-                                                                           subset="training",
-                                                                           seed=123,
-                                                                           image_size=(196, 196),
-                                                                           color_mode="grayscale")
-        test_images = tf.keras.preprocessing.image_dataset_from_directory(data_dir,
-                                                                          validation_split=0.25,
-                                                                          subset="validation",
-                                                                          seed=123,
-                                                                          image_size=(196, 196),
-                                                                          color_mode="grayscale")
-        model.fit(train_images, batch_size=20, epochs=10, validation_data=(test_images), steps_per_epoch=100)
+
         print("Model has been built, showing model summary now.")
         print(model.summary())
-        model.save_weights("Weights/weights")"""
+
+        # Save the weights as specified in the "checkpoint_path" format
+        model.save_weights(cp_path.format(epoch=0))
+
+        # Train the model according to the given instructions
+        model.fit(train_images, validation_data=(test_images),
+                  epochs=args.epochs,
+                  callbacks=[cp_callback, tb_callback])
+
+        # Save the model into the appropriate folder
+        model.save(filepath=save_dir,
+                   overwrite=True)
 
     # Demonstrate the image taking process
     elif args.showcase:
