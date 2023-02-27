@@ -30,7 +30,7 @@ import utils
 from collect_dataset import collect_data
 from showcase_collect_preprocessing import showcase_preprocessing
 from showcase_model import showcase_model
-from preprocessing import AdaptiveThresholding, Blurring
+from model.preprocessing import AdaptiveThresholding, Blurring
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--config_dir", default="", type=str, help="Directory with the config.json file")
@@ -39,11 +39,11 @@ parser.add_argument("--experiment", default=None, type=int,
 
 # Specify procedure
 procedure = parser.add_mutually_exclusive_group()
-procedure.add_argument("--col", "--collect", action="store_true", help="If given, run the data collection process")
-procedure.add_argument("--prep", "--preprocess", action="store_true", help="If given, showcase various preprocessing pipelines")
-procedure.add_argument("--tr", "--train", action="store_true", help="If given, run the model training process")
-procedure.add_argument("--show", "--showcase", action="store_true", help="If given, run the showcasing process")
-procedure.add_argument("--pred", "--predict", action="store_true", help="If given, run the showcasing process with model prediction")
+procedure.add_argument("-col", "--collect", action="store_true", help="If given, run the data collection process")
+procedure.add_argument("-prep", "--preprocess", action="store_true", help="If given, showcase various preprocessing pipelines")
+procedure.add_argument("-tr", "--train", action="store_true", help="If given, run the model training process")
+procedure.add_argument("-show", "--showcase", action="store_true", help="If given, run the showcasing process")
+procedure.add_argument("-pred", "--predict", action="store_true", help="If given, run the showcasing process with model prediction")
 
 # Specify the hyperparameters if the json file was not given
 hyperparameters = parser.add_argument_group("Hyperparameters")
@@ -58,6 +58,7 @@ hyperparameters.add_argument("--split", default=0.2, type=float, help="Portion o
 
 # TODO: Add options for architecture (probably using action="append" and then expecting input such as "icccpdo" for input, conv, conv, conv, pool, dense, output)
 # TODO: Create a model building function for the expected input specified in the previous todo
+# TODO: For the previous tasks, use the functional Keras API for better distributability of the model (saving & loading)
 # TODO: Create the same functionality for preprocessing?
 # TODO: Think of ways of specifying the parameters for the individual layers
 # TODO: Refactor the custom preprocessing layers so that they support prefetched dataset as their input
@@ -65,9 +66,9 @@ hyperparameters.add_argument("--split", default=0.2, type=float, help="Portion o
 
 # Specify the architecture for the given experiment if training procedure is set
 architecture = parser.add_argument_group("Architecture")
-architecture.add_argument("--arch", "architecture", type=str,
+architecture.add_argument("--arch", "--architecture", type=str,
                           help="Specify the trainable layers for the network using the following commands: i (input layer), c (convolutional layer), p (pooling layer), d (dense layer), dr (dropout layer) or o (output layer)")
-architecture.add_argument("--prep_layers", "preprocessing_layers", type=str,
+architecture.add_argument("--prep_layers", "--preprocessing_layers", type=str,
                           help="Specify the architecture of the preprocessing pipeline using the following commands: g (grayscale layer), b (blurring layer), t (thresholding layer), r (rescale layer)")
 
 
@@ -75,7 +76,7 @@ def main(args):
     """Command line function"""
 
     # Load configuration file from json in the given folder
-    with open(args.config_dir, "r") as config_file:
+    with open(args.config_dir + "config.json", "r") as config_file:
         config = json.load(config_file)
 
     # Default procedure
@@ -136,7 +137,7 @@ def main(args):
         if args.experiment == -1:
 
             # Ask for confirmation in case the current folder already has some saved model in it
-            if len(next(os.walk(current_dir))):
+            if len(next(os.walk(current_dir))[2]):
                 print("The folder with current model layout already contains some files.",
                       "Continuing to save the result of the current training procedure",
                       "might result in loss of the previous model.")
@@ -204,19 +205,20 @@ def main(args):
                                                          verbose=1,
                                                          save_weights_only=True,
                                                          save_freq=2 * args.batch_size)
-        tb_callback = tf.keras.callbacks.Tensorboard(log_dir=tb_path,
+        tb_callback = tf.keras.callbacks.TensorBoard(log_dir=tb_path,
                                                      histogram_freq=1)
 
         # !!! TODO !!!
         # Build and compile the model according to the given instructions
+        # TODO: Include optimizer selection + adjustment of learning rate
         model = tf.keras.Sequential()
         model.compile(optimizer=args.optimizer,
                       loss=tf.keras.losses.CategoricalCrossentropy(),
-                      learning_rate=args.learning_rate,
                       metrics=["accuracy"])
 
         print("Model has been built, showing model summary now.")
-        print(model.summary())
+        # TODO: Add model building to be able to present summary or move this to the end of training
+        # print(model.summary())
 
         # Save the weights as specified in the "checkpoint_path" format
         model.save_weights(cp_path.format(epoch=0))

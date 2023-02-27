@@ -206,19 +206,3 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
     finally:
         cap.release()
         cv2.destroyAllWindows()
-
-
-showcase_model(["I index", "My", "You", "Your",
-                "In", "To", "With", "Yes",
-                "No", "Well", "I love you",
-                "Oh I see", "Name", "Hug",
-                "Internet", "Bus", "Money",
-                "Work", "Ask", "Go",
-                "Look", "Have", "Correct",
-                "Want", "Where",
-                "A", "B", "C", "D",
-                "E", "F", "G", "H",
-                "I", "K", "L", "M",
-                "N", "O", "P", "Q",
-                "R", "S", "T", "U",
-                "V", "W", "X", "Y"])
