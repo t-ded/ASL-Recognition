@@ -249,6 +249,7 @@ def main(args):
                                 name="trainable_layers")
 
         # Merge the preprocessing pipeline with the trainable layers
+        # TODO: Adjust this correctly after you finish preprocessing pipeline building functionality
         model = tf.keras.Model(inputs=preprocessing.input,
                                outputs=trainable(preprocessing.output),
                                name="full_model")

@@ -13,8 +13,7 @@ import re
 import warnings
 import numpy as np
 import cv2
-from tensorflow.keras import layers, Sequential
-from model.preprocessing import AdaptiveThresholding, Blurring, Grayscale
+import tensorflow as tf
 from utils import create_rectangle, get_dictionary
 
 
@@ -72,9 +71,9 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
     if predict:
         if not model:
             raise ValueError("Cannot perform predictions without a model specified.")
-        if not isinstance(model, Sequential):
-            raise ValueError("Different datatype than keras.engine.sequential.Sequential has been given as an input for the model parameter.")
-        if model.layers[-1].units != len(gesture_list):
+        if not isinstance(model, tf.keras.Model):
+            raise ValueError("Different datatype than tf.keras.Model has been given as an input for the model parameter.")
+        if model.get_layer(index=-1).output.shape[-1] != len(gesture_list):
             warnings.warn("\nGiven model has different output size than given gesture list so the predictions might be incorrect.\n")
 
     if translations is not None:
@@ -100,6 +99,10 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
     rect_fingerspell_2 = create_rectangle((400, 50), img_size + 4, img_size + 4)
     rect = rect_torso
 
+    # Naive solution to allow looping through the gestures in prediction environment
+    if predict:
+        gesture_list *= 5
+
     # Encapsulate the whole process to be able to close cameras in case of error
     try:
 
@@ -110,26 +113,12 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
         cv2.resizeWindow("Camera view", 1080, 720)
         cv2.moveWindow("Camera view", 100, 150)
 
-        cv2.namedWindow("Binary view")
-        cv2.resizeWindow("Binary view", 480, 360)
-        cv2.moveWindow("Binary view", 750, 30)
-
         cv2.namedWindow("Example")
         cv2.resizeWindow("Example", 480, 360)
-        cv2.moveWindow("Example", 750, 430)
+        cv2.moveWindow("Example", 750, 230)
 
         lang = True  # To let the user change language, True stands for English, False for Czech
         rectangle_position = 0  # Which position of the rectangle to use
-
-        # Setup the preprocessing pipeline
-        preprocessing_pipeline = Sequential(
-            [
-                Grayscale(),
-                Blurring(blurring_type="median", kernel_size=3, sigma=None),
-                AdaptiveThresholding(thresholding_type="mean", block_size=3, constant=-3),
-                layers.Rescaling(scale=(1. / 255))
-            ]
-        )
 
         # Perform the data collecting process for each gesture in the given gesture list
         for gesture in gesture_list:
@@ -171,17 +160,16 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
                 frame_cut = frame[(rect[0][1] + 2):(rect[2][1] - 2),
                                   (rect[0][0] + 2):(rect[1][0] - 2)]
 
-                # Apply the preprocessing pipeline
-                frame_binary = preprocessing_pipeline(frame_cut)
-
                 # Show all images
 
                 # Live view with frame and text
                 cv2.rectangle(frame, rect[0], rect[3], (0, 255, 0), 2)
                 # Add information about prediction if expected, otherwise just show the name of the gesture
                 if predict:
-                    prediction = model(frame_binary, training=False).numpy()
-                    txt = gesture_list[np.argmax(prediction, axis=1)[0]] + f"({max(prediction)})"
+                    prediction = model(frame_cut[None, :],
+                                       training=False).numpy()
+                    probability = prediction.max(axis=-1).round(2)
+                    txt = gesture_list[np.argmax(prediction, axis=1)[0]] + " (" + str(probability[0]) + ")"
                 else:
                     txt = gesture.capitalize()
                 if not lang:
@@ -189,9 +177,6 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
                 cv2.putText(frame, txt, (rect[0][0], rect[0][1] - 15),
                             cv2.FONT_HERSHEY_DUPLEX, 1, (0, 255, 0), 2)
                 cv2.imshow("Camera view", frame)
-
-                # Binary version
-                cv2.imshow("Binary view", cv2.resize(frame_binary.numpy(), (480, 360)))
 
                 # Show example on new gesture
                 if not flag:
