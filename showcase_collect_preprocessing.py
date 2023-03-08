@@ -168,7 +168,7 @@ def showcase_preprocessing():
                     img_path = r"%s" % os.path.join(save_name, img_name)
 
                     # Save each pipeline's result and information
-                    if not cv2.imwrite(img_path, pipeline.numpy()):
+                    if not cv2.imwrite(img_path, (pipeline.numpy() * 255)):
                         print("Something went wrong during this attempt:",
                               f"run - pipeline {i}")
 

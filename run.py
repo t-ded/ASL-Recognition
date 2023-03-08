@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # disable=C0301, C0103, E1101
-# TODO: Adjust README.md file and the docstring for this run function
+# TODO: Adjust README.md file 
+# TODO: Adjust the docstring for this run function
 # TODO: Fill in the docstring and comments for classes and their methods in preprocessing.py file
 # TODO: Repair the saving of preprocessing pipelines
 """
