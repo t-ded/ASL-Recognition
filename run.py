@@ -2,6 +2,7 @@
 # disable=C0301, C0103, E1101
 # TODO: Adjust README.md file and the docstring for this run function
 # TODO: Fill in the docstring and comments for classes and their methods in preprocessing.py file
+# TODO: Repair the saving of preprocessing pipelines
 """
 A simple function to enable running
 the different scripts from command line.
@@ -31,6 +32,7 @@ from collect_dataset import collect_data
 from showcase_collect_preprocessing import showcase_preprocessing
 from showcase_model import showcase_model
 from model.preprocessing import AdaptiveThresholding, Blurring
+from model.model import build_model
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--config_dir", default="", type=str, help="Directory with the config.json file")
@@ -55,6 +57,7 @@ hyperparameters.add_argument("--regularization", default=None, choices=["l1", "l
 hyperparameters.add_argument("--dropout", default=0.5, type=float, help="Dropout rate for the dropout layers")
 hyperparameters.add_argument("--seed", default=123, type=int, help="Random seed for operations including randomness (e.g. shuffling)")
 hyperparameters.add_argument("--split", default=0.2, type=float, help="Portion of the full dataset to reserve for validation")
+hyperparameters.add_argument("--architecture", default=None, type=str, help="Specify the model architecture")
 
 # TODO: Add options for architecture (probably using action="append" and then expecting input such as "icccpdo" for input, conv, conv, conv, pool, dense, output)
 # TODO: Create a model building function for the expected input specified in the previous todo
@@ -208,19 +211,26 @@ def main(args):
         tb_callback = tf.keras.callbacks.TensorBoard(log_dir=tb_path,
                                                      histogram_freq=1)
 
-        # !!! TODO !!!
-        # Build and compile the model according to the given instructions
+        # Set the default model architecture if not specified
+        if args.architecture is None:
+            args.architecture = config["Model"]["Default architecture"]
+
+        # Build the model according to given instructions
+        model = build_model(inp_size=[config["General parameters"]["Image size"],
+                                      config["General parameters"]["Image size"]],
+                            output_size=len(gestures), instructions=args.architecture)
+
+        # Compile the modile according to given instructions
         # TODO: Include optimizer selection + adjustment of learning rate
-        model = tf.keras.Sequential()
         model.compile(optimizer=args.optimizer,
                       loss=tf.keras.losses.CategoricalCrossentropy(),
-                      metrics=["accuracy"])
+                      metrics=[tf.keras.metrics.CategoricalAccuracy(name="accuracy")])
 
         print("Model has been built, showing model summary now.")
-        # TODO: Add model building to be able to present summary or move this to the end of training
-        # print(model.summary())
+        # TODO: Check model summary works
+        print(model.summary())
 
-        # Save the weights as specified in the "checkpoint_path" format
+        # Save the initial weights as specified in the "checkpoint_path" format
         model.save_weights(cp_path.format(epoch=0))
 
         # Train the model according to the given instructions

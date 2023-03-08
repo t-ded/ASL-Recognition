@@ -7,7 +7,8 @@
     },
     "Model": {
         "Current model": "model/current",
-        "Model experiments": "model/experiments"
+        "Model experiments": "model/experiments",
+        "Default architecture": "I,C-f64-w3-s2-pv,C-f64-w3-s2-pv,P-p2-s2-ps,D-0.5,H-100,O"
     },
     "General parameters": {
         "Image size": 196,
