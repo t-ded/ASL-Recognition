@@ -12,7 +12,7 @@ import re
 import tensorflow as tf
 
 
-def build_model(inp_shape, output_size, instructions="I,O"):
+def build_model(inp_shape, output_size, name="model", instructions="I,O"):
     """
     Build model with the specified architecture
 
@@ -22,6 +22,8 @@ def build_model(inp_shape, output_size, instructions="I,O"):
         output_size: int
             Dimensions of the output. Output layer activation is automatically
             adjusted based on this (sigmoid for 1 and softmax otherwise)
+        name: str (default "model")
+            A name for the output model.
         instructions: str (default "I,O")
             Instructions for the architecture of the model.
             The layers should be split by ',' while the parameters
@@ -67,6 +69,9 @@ def build_model(inp_shape, output_size, instructions="I,O"):
 
     if output_size <= 0:
         raise ValueError("The dimensions of the output must be positive.")
+
+    if not isinstance(name, str):
+        raise ValueError("Different datatype than string has been given as input for the parameter name")
 
     # Further input management for the instructions variable is performed
     # per layer during the model building process
@@ -268,4 +273,4 @@ def build_model(inp_shape, output_size, instructions="I,O"):
             wrn += "Omitting the layer and continuing the process.\n"
             continue
 
-    return tf.keras.Model(inputs=inp, outputs=output)
+    return tf.keras.Model(inputs=inp, outputs=output, name=name)
