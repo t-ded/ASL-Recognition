@@ -75,7 +75,7 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
         if not isinstance(model, Sequential):
             raise ValueError("Different datatype than keras.engine.sequential.Sequential has been given as an input for the model parameter.")
         if model.layers[-1].units != len(gesture_list):
-            warnings.warn("Given model has different output size than given gesture list so the predictions might be incorrect.")
+            warnings.warn("\nGiven model has different output size than given gesture list so the predictions might be incorrect.\n")
 
     if translations is not None:
         if not isinstance(translations, str):

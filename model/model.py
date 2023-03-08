@@ -1,6 +1,12 @@
-# TODO: Build a function supporting building instructions in the form of ["i", "c", "c", "p", "d", "o"]
-# TODO: If the instructions do not include "i" as first and "o" as last argument, add the input and output layers anyway
-# TODO: The output layer should be a dense layer with the softmax activation
+"""
+Module to enable tf.keras.Model object building based on given text instructions
+for architecture settings. The module is used for the the Bachelor's Thesis project
+on the following topic:
+    "Construction of a Neural Networks model for translation of recorded sign language".
+
+@author: Tomáš Děd
+"""
+
 import warnings
 import re
 import tensorflow as tf
@@ -65,13 +71,13 @@ def build_model(inp_shape, output_size, instructions="I,O"):
 
     # Inform the user the model will start with an input layer
     if instructions[0] != "I":
-        wrn = "The instructions did not include an input layer on the first position.\n"
+        wrn = "\nThe instructions did not include an input layer on the first position.\n"
         wrn += "The input layer will be added automatically.\n"
         warnings.warn(wrn)
 
     # Make sure the model ends with an output layer and inform the user
     if instructions[-1] != "O":
-        wrn = "The instructions did not include an output layer on the last position.\n"
+        wrn = "\nThe instructions did not include an output layer on the last position.\n"
         wrn += "The output layer will be added automatically.\n"
         warnings.warn(wrn)
         instructions += ",O"
@@ -92,7 +98,7 @@ def build_model(inp_shape, output_size, instructions="I,O"):
 
         # Empty instruction
         if not layer:
-            wrn = "One of the layers in the instructions given was empty,\n"
+            wrn = "\nOne of the layers in the instructions given was empty,\n"
             wrn += "i.e. the instructions parameter contains ',,'.\n"
             wrn += "Omitting the layer and continuing the process.\n"
             warnings.warn(wrn)
@@ -102,7 +108,7 @@ def build_model(inp_shape, output_size, instructions="I,O"):
         layer_name = layer[0]
 
         if len(layer) == 1 and layer_name != "O":
-            wrn = "One of the hidden layers does not have specified parameters.\n"
+            wrn = "\nOne of the hidden layers does not have specified parameters.\n"
             wrn += "Omitting the layer and continuing the process.\n"
             warnings.warn(wrn)
             continue
@@ -118,7 +124,7 @@ def build_model(inp_shape, output_size, instructions="I,O"):
 
             # Ensure correct input
             if not match:
-                wrn = "The argument for the convolutional layer is not specified.\n"
+                wrn = "\nThe argument for the convolutional layer is not specified.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
                 warnings.warn(wrn)
                 continue
@@ -126,7 +132,7 @@ def build_model(inp_shape, output_size, instructions="I,O"):
             # Ensure the number of filters is specified
             filters = match.group(1)
             if not filters:
-                wrn = "The number of filters for the convolutional layer is not specified.\n"
+                wrn = "\nThe number of filters for the convolutional layer is not specified.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
                 warnings.warn(wrn)
                 continue
@@ -134,7 +140,7 @@ def build_model(inp_shape, output_size, instructions="I,O"):
             # Ensure the kernel size is specified
             kernel_size = match.group(2)
             if not filters:
-                wrn = "The kernel_size for the convolutional layer is not specified.\n"
+                wrn = "\nThe kernel_size for the convolutional layer is not specified.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
                 warnings.warn(wrn)
                 continue
@@ -157,7 +163,7 @@ def build_model(inp_shape, output_size, instructions="I,O"):
 
             # Ensure correct input
             if not match:
-                wrn = "The argument for the pooling layer is not specified.\n"
+                wrn = "\nThe argument for the pooling layer is not specified.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
                 warnings.warn(wrn)
                 continue
@@ -165,7 +171,7 @@ def build_model(inp_shape, output_size, instructions="I,O"):
             # Ensure the type of the pooling layer is specified
             pooling_type = match.group(1)
             if not pooling_type:
-                wrn = "The type for the pooling layer is not specified.\n"
+                wrn = "\nThe type for the pooling layer is not specified.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
                 warnings.warn(wrn)
                 continue
@@ -173,7 +179,7 @@ def build_model(inp_shape, output_size, instructions="I,O"):
             # Ensure the pooling size is specified
             pool_size = match.group(2)
             if not filters:
-                wrn = "The pool_size for the pooling layer is not specified.\n"
+                wrn = "\nThe pool_size for the pooling layer is not specified.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
                 warnings.warn(wrn)
                 continue
@@ -193,7 +199,7 @@ def build_model(inp_shape, output_size, instructions="I,O"):
                 hidden = tf.keras.layers.MaxPool2D(pool_size=pool_size,
                                                    strides=strides)(hidden)
             else:
-                wrn = "The type for the pooling layer is not valid.\n"
+                wrn = "\nThe type for the pooling layer is not valid.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
                 warnings.warn(wrn)
                 continue
@@ -207,15 +213,15 @@ def build_model(inp_shape, output_size, instructions="I,O"):
 
             # Ensure the dropout rate is specified
             if not match:
-                wrn = "The argument for the dropout layer is not specified.\n"
+                wrn = "\nThe argument for the dropout layer is not specified.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
                 warnings.warn(wrn)
                 continue
 
             # Ensure correct input
-            rate = float(match.group(1))
+            rate = float(match.group())
             if not 0 <= rate <= 1:
-                wrn = "The argument for the dropout layer is not a number between 0 and 1.\n"
+                wrn = "\nThe argument for the dropout layer is not a number between 0 and 1.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
                 warnings.warn(wrn)
                 continue
@@ -231,12 +237,12 @@ def build_model(inp_shape, output_size, instructions="I,O"):
 
             # Ensure the number of units is specified
             if not match:
-                wrn = "The argument for the dense layer is not specified.\n"
+                wrn = "\nThe argument for the dense layer is not specified.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
                 warnings.warn(wrn)
                 continue
 
-            hidden = tf.keras.layers.Dense(int(match.group(1)))(hidden)
+            hidden = tf.keras.layers.Dense(int(match.group()))(hidden)
 
         # Output layer
         if layer_name == "O":

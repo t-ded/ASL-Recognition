@@ -40,8 +40,8 @@ def new_folder(dir_name, verbose=False):
             if verbose:
                 print(f"A folder has been successfully created with this path: {dir_name}")
         except OSError:
-            wrn = "\nThe path you have specified for the new folder to-be created is invalid."
-            wrn += "\nThe folder does not exist and was not created. Please specify a correct path."
+            wrn = "\nThe path you have specified for the new folder to-be created is invalid.\n"
+            wrn += "\nThe folder does not exist and was not created. Please specify a correct path.\n"
             warnings.warn(wrn)
 
     elif verbose:
@@ -62,7 +62,7 @@ def repair_padding(dir_name):
         raise ValueError("Different datatype than string has been given as input for name of the directory.")
 
     if not os.path.exists(dir_name):
-        warnings.warn("\nDirectory with given path does not exist. No padding adjustments have been made, returning.")
+        warnings.warn("\nDirectory with given path does not exist. No padding adjustments have been made, returning.\n")
         return
 
     # Obtain the list of files in the folder
@@ -92,13 +92,13 @@ def repair_padding(dir_name):
         # Stop the process if there is some unexpected (i.e. < 1) number in padding
         if int(name_split_next[1]) < 1:
             wrn = f"\nIn the folder {dir_name} there is a file {files[i + 1]} with non-positive numbering!\n"
-            wrn += "This might result in unexpected behaviour. The repair process will now terminate, please correct the number."
+            wrn += "This might result in unexpected behaviour. The repair process will now terminate, please correct the number.\n"
             warnings.warn(wrn)
             return
 
         # Warn the user if there is some mix of gestures
         if name_split[0] != name_split_next[0]:
-            warnings.warn(f"There are files with different naming in the current directory ({dir_name}): {files[i]}, {files[i + 1]}!")
+            warnings.warn(f"\nThere are files with different naming in the current directory ({dir_name}): {files[i]}, {files[i + 1]}!\n")
 
         # Find the padding jump
         diff = int(name_split_next[1]) - int(name_split[1])
@@ -150,7 +150,7 @@ def setup_folders(script_directory, gestures_list, amount_per_gesture):
     if not isinstance(script_directory, str):
         raise ValueError("Different datatype than string has been given as input for name of the script directory.")
     if not script_directory:
-        warnings.warn("Given script directory is empty, thus all the processes will run in the location of this script.")
+        warnings.warn("\nGiven script directory is empty, thus all the processes will run in the location of this script.\n")
     else:
         if not os.path.exists(script_directory):
             raise ValueError("The given directory for the script does not exist, please specify a correct directory path.")
@@ -211,7 +211,7 @@ def setup_folders(script_directory, gestures_list, amount_per_gesture):
         new = os.path.join(example_dir, gesture + ".jpg")
         if not os.path.exists(new):
             cv2.imwrite(f"{new}", np.ones((540, 960)) * 255)
-            warnings.warn(f"\nThe current gesture ({gesture}) does not have an example image yet, a dummy image has been created instead.")
+            warnings.warn(f"\nThe current gesture ({gesture}) does not have an example image yet, a dummy image has been created instead.\n")
 
     return data_dir, example_dir, model_dir, desired_amount, current_amount, paths
 

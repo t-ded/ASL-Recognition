@@ -57,22 +57,16 @@ hyperparameters.add_argument("--regularization", default=None, choices=["l1", "l
 hyperparameters.add_argument("--dropout", default=0.5, type=float, help="Dropout rate for the dropout layers")
 hyperparameters.add_argument("--seed", default=123, type=int, help="Random seed for operations including randomness (e.g. shuffling)")
 hyperparameters.add_argument("--split", default=0.2, type=float, help="Portion of the full dataset to reserve for validation")
-hyperparameters.add_argument("--architecture", default=None, type=str, help="Specify the model architecture")
 
-# TODO: Add options for architecture (probably using action="append" and then expecting input such as "icccpdo" for input, conv, conv, conv, pool, dense, output)
-# TODO: Create a model building function for the expected input specified in the previous todo
-# TODO: For the previous tasks, use the functional Keras API for better distributability of the model (saving & loading)
-# TODO: Create the same functionality for preprocessing?
-# TODO: Think of ways of specifying the parameters for the individual layers
+# TODO: Create architecture building functionality for preprocessing using build_preprocessing function
 # TODO: Refactor the custom preprocessing layers so that they support prefetched dataset as their input
-# TODO: Add a timeit metric based on consultation
 
 # Specify the architecture for the given experiment if training procedure is set
 architecture = parser.add_argument_group("Architecture")
-architecture.add_argument("--arch", "--architecture", type=str,
-                          help="Specify the trainable layers for the network using the following commands: i (input layer), c (convolutional layer), p (pooling layer), d (dense layer), dr (dropout layer) or o (output layer)")
-architecture.add_argument("--prep_layers", "--preprocessing_layers", type=str,
-                          help="Specify the architecture of the preprocessing pipeline using the following commands: g (grayscale layer), b (blurring layer), t (thresholding layer), r (rescale layer)")
+architecture.add_argument("-arch", "--architecture", default=None, type=str,
+                          help="Specify the trainable layers for the network using the build_model function (for more information, see its documentation)")
+architecture.add_argument("-prep_layers", "--preprocessing_layers", default=None, type=str,
+                          help="Specify the architecture of the preprocessing pipeline using the build_preprocessing function (for more information, see its documentation)")
 
 
 def main(args):
@@ -84,7 +78,7 @@ def main(args):
 
     # Default procedure
     if not args:
-        print("No arguments specified, will try to run the showcasing without prediction")
+        print("\nNo arguments specified, will try to run the showcasing without prediction\n")
         args.showcase = True
 
     # Set up the list of gestures
@@ -99,6 +93,7 @@ def main(args):
     experiments_dir = os.path.join(model_dir, "experiments")
     current_dir = os.path.join(model_dir, "current")
     print("The folders have been set up.")
+    print("\n\n\n ------------------------------------------------ \n\n\n")
 
     # Collection of the data
     if args.collect:
@@ -155,8 +150,11 @@ def main(args):
             # Adjust the experiment number accordingly if not given
             if args.experiment is None:
                 exp_folders = list(next(os.walk(experiments_dir))[1])
-                exp_folders.sort(key=lambda folder: int(re.split(r"[_]", folder)[1]))
-                args.experiment = exp_folders[-1]
+                if not exp_folders:
+                    args.experiment = 1
+                else:
+                    exp_folders.sort(key=lambda folder: int(re.split(r"[_]", folder)[1]))
+                    args.experiment = int(re.search(r"\d+", exp_folders[-1]).group()) + 1
                 print("You selected training procedure but did not input an experiment number.",
                       f"A new folder with experiment number {args.experiment} will thus be created for this experiment.")
 
@@ -171,14 +169,14 @@ def main(args):
                     if input("Do you wish to automatically create a new folder for this run and then continue (y/[n])?").lower() == "y":
                         exp_folders = list(next(os.walk(experiments_dir))[1])
                         exp_folders.sort(key=lambda folder: int(re.split(r"[_]", folder)[1]))
-                        args.experiment = exp_folders[-1]
+                        args.experiment = int(re.search(r"\d+", exp_folders[-1]).group()) + 1
+                        experiment_dir = os.path.join(experiments_dir, "experiment_" + str(args.experiment))
                         print(f"A new folder with experiment number {args.experiment} will be created for this experiment.")
                     else:
                         print("Aborting the training procedure.")
                         return
 
             # Save the model in the respective experiment folder
-            experiment_dir = os.path.join(experiments_dir, "experiment_" + str(args.experiment))
             utils.new_folder(experiment_dir)
             save_dir = os.path.join(model_dir, experiment_dir)
 
