@@ -232,15 +232,23 @@ def main(args):
                                        1],
                             output_size=len(gestures), instructions=args.architecture)
 
+        # Merge the preprocessing pipeline with the trainable layers
+        # TODO
+        
+
         # Compile the modile according to given instructions
         # TODO: Include optimizer selection + adjustment of learning rate
         model.compile(optimizer=args.optimizer,
                       loss=tf.keras.losses.CategoricalCrossentropy(),
                       metrics=[tf.keras.metrics.CategoricalAccuracy(name="accuracy")])
 
+        # Show model summary, save the model diagram
         print("\n\n ------------------------------------------------ \n\n")
         print("Model has been built, showing model summary now.")
         print(model.summary())
+        tf.keras.utils.plot_model(model,
+                                  os.path.join(save_dir, "model_diagram.png"),
+                                  show_shapes=True)
 
         # Save the initial weights as specified in the "checkpoint_path" format
         model.save_weights(cp_path.format(epoch=0))
