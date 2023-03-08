@@ -214,8 +214,10 @@ def main(args):
             args.architecture = config["Model"]["Default architecture"]
 
         # Build the model according to given instructions
-        model = build_model(inp_size=[config["General parameters"]["Image size"],
-                                      config["General parameters"]["Image size"]],
+        # TODO: Change the inp_shape third dimension to 1 after the model is preceeded by preprocessing mode
+        model = build_model(inp_shape=[config["General parameters"]["Image size"],
+                                       config["General parameters"]["Image size"],
+                                       3],
                             output_size=len(gestures), instructions=args.architecture)
 
         # Compile the modile according to given instructions
@@ -224,8 +226,8 @@ def main(args):
                       loss=tf.keras.losses.CategoricalCrossentropy(),
                       metrics=[tf.keras.metrics.CategoricalAccuracy(name="accuracy")])
 
+        print("\n\n\n ------------------------------------------------ \n\n\n")
         print("Model has been built, showing model summary now.")
-        # TODO: Check model summary works
         print(model.summary())
 
         # Save the initial weights as specified in the "checkpoint_path" format
@@ -257,9 +259,9 @@ def main(args):
                                                                "Blurring": Blurring})
         except IOError:
             print("The prediction procedure was chosen but model cannot be found",
-                  f"in the folder specified in the config.json file ({config['Model']['Current model']}).",
-                  "Please make sure to adjust the folder name in the config file or save the model in there.",
-                  "Eventually, this can be resolved by running the train procedure with experiment number specified as -1.")
+                  f"in the folder specified in the config.json file ({config['Model']['Current model']}).\n",
+                  "Please make sure to adjust the folder name in the config file or save the model in there.\n",
+                  "Eventually, this can be resolved by running the train procedure with experiment number specified as -1.\n")
             print("Terminating the prediction process.")
             return
 
