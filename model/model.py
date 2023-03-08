@@ -22,19 +22,19 @@ def build_model(inp_shape, output_size, instructions="I,O"):
             for the respective layers should be split by '-'.
             Note that the input and output layers are added automatically
             if the instructions do not include them as the first and last layers.
-                Example: "I,C-f64-k3-s2-pv,C-f64-k3-s2-pv,P-p2-s2-ps,D-0.5,H-100,O"
+                Example: "I,C-f64-k3-s2,C-f64-k3-s2,P-ps2-s2-tm,D-0.5,H-100,O"
                     Creates a model with:
                         - input layer with shape inp_shape
                         - two convolutional layers with 64 filters,
-                        window_size 3 and striding (2, 2) and padding valid
-                        - pooling layer with pooling_size 2, striding (2, 2) and padding same
+                        window_size 3 and striding (2, 2)
+                        - max pooling layer with pooling_size 2, striding (2, 2)
                         - dropout layer with dropout_rate 0.5
                         - densely connected layer with 100 units
                         - output layer of size output_size
                 Supported layers and their supported arguments:
                     - Input: I
-                    - Convolutional (filters, kernel_size, strides, padding): C-f10-k3-s2-pv
-                    - MaxPooling (pool_size, strides, padding): P-p2-s2-pv
+                    - Convolutional (filters, kernel_size, strides): C-f10-k3-s2
+                    - Pooling (pool_size, strides, type(one of average (a) or max (m))): P-p2-s2-ta
                     - Dropout (rate): D-0.5
                     - Dense (units): H-100
                     - Output: O
@@ -117,12 +117,32 @@ def build_model(inp_shape, output_size, instructions="I,O"):
         if layer_name == "P":
 
             # Extract configuration
-            pattern = r"D([\d\.]*)"
+            pattern = r"t-(\w)p-(\d*)s-(\d*)"
             match = re.match(pattern, layer_name)
 
             # Ensure correct input
             if not match:
-                wrn = "The argument for the dropout layer is not specified.\n"
+                wrn = "The argument for the pooling layer is not specified.\n"
+                wrn += "Omitting the layer and continuing the process.\n"
+                warnings.warn(wrn)
+                continue
+
+            # Choose the correct type of the pooling layer
+            pooling_type = match.group(1)
+            if not pooling_type:
+                wrn = "The type for the pooling layer is not specified.\n"
+                wrn += "Omitting the layer and continuing the process.\n"
+                warnings.warn(wrn)
+                continue
+
+            if pooling_type == "a":
+                hidden = tf.keras.layers.AveragePooling2D(pool_size=int(match.group(2)),
+                                                          strides=int(match.group(3)))(hidden)
+            elif pooling_type == "m":
+                hidden = tf.keras.layers.MaxPool2D(pool_size=int(match.group(2)),
+                                                   strides=int(match.group(3)))(hidden)
+            else:
+                wrn = "The type for the pooling layer is not valid.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
                 warnings.warn(wrn)
                 continue
@@ -131,7 +151,7 @@ def build_model(inp_shape, output_size, instructions="I,O"):
         if layer_name == "D":
 
             # Extract configuration
-            pattern = r"D([\d\.]*)"
+            pattern = r"D-([\d\.]*)"
             match = re.match(pattern, layer_name)
 
             # Ensure correct input
@@ -154,7 +174,7 @@ def build_model(inp_shape, output_size, instructions="I,O"):
         if layer_name == "H":
 
             # Extract configuration
-            pattern = r"H(\d*)"
+            pattern = r"H-(\d*)"
             match = re.match(pattern, layer_name)
 
             # Ensure correct input
