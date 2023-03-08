@@ -127,19 +127,8 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
         # Convolutional layer
         if layer_name == "C":
 
-            # Extract configuration
-            pattern = r"-f(\d*)-k(\d*)-s(\d*)"
-            match = re.search(pattern, layer)
-
-            # Ensure correct input
-            if not match:
-                wrn = "\nThe argument for the convolutional layer is not specified.\n"
-                wrn += "Omitting the layer and continuing the process.\n"
-                warnings.warn(wrn)
-                continue
-
             # Ensure the number of filters is specified
-            filters = match.group(1)
+            filters = re.search(r"-f(\d*)", layer).group(1)
             if not filters:
                 wrn = "\nThe number of filters for the convolutional layer is not specified.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
@@ -147,7 +136,7 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
                 continue
 
             # Ensure the kernel size is specified
-            kernel_size = match.group(2)
+            kernel_size = re.search(r"-k(\d*)", layer).group(1)
             if not filters:
                 wrn = "\nThe kernel_size for the convolutional layer is not specified.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
@@ -155,7 +144,7 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
                 continue
 
             # If strides is not specified, set it to default
-            strides = match.group(3)
+            strides = re.search(r"-k(\d*)", layer).group(1)
             if not strides:
                 strides = 1
 
@@ -166,19 +155,8 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
         # Pooling layer
         if layer_name == "P":
 
-            # Extract configuration
-            pattern = r"-t(\w)-p(\d*)-s(\d*)"
-            match = re.search(pattern, layer)
-
-            # Ensure correct input
-            if not match:
-                wrn = "\nThe argument for the pooling layer is not specified.\n"
-                wrn += "Omitting the layer and continuing the process.\n"
-                warnings.warn(wrn)
-                continue
-
             # Ensure the type of the pooling layer is specified
-            pooling_type = match.group(1)
+            pooling_type = re.search(r"-t(\w)", layer).group(1)
             if not pooling_type:
                 wrn = "\nThe type for the pooling layer is not specified.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
@@ -186,7 +164,7 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
                 continue
 
             # Ensure the pooling size is specified
-            pool_size = match.group(2)
+            pool_size = re.search(r"-p(\d*)", layer).group(1)
             if not filters:
                 wrn = "\nThe pool_size for the pooling layer is not specified.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
@@ -194,7 +172,7 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
                 continue
 
             # If strides is not specified, set it to default
-            strides = match.group(3)
+            strides = re.search(r"-s(\d*)", layer).group(1)
             if not strides:
                 strides = None
             else:
