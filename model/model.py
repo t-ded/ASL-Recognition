@@ -22,7 +22,7 @@ def build_model(inp_shape, output_size, instructions="I,O"):
             for the respective layers should be split by '-'.
             Note that the input and output layers are added automatically
             if the instructions do not include them as the first and last layers.
-                Example: "I,C-f64-w3-s2-pv,C-f64-w3-s2-pv,P-p2-s2-ps,D-0.5,H-100,O"
+                Example: "I,C-f64-k3-s2-pv,C-f64-k3-s2-pv,P-p2-s2-ps,D-0.5,H-100,O"
                     Creates a model with:
                         - input layer with shape inp_shape
                         - two convolutional layers with 64 filters,
@@ -31,6 +31,13 @@ def build_model(inp_shape, output_size, instructions="I,O"):
                         - dropout layer with dropout_rate 0.5
                         - densely connected layer with 100 units
                         - output layer of size output_size
+                Supported layers and their supported arguments:
+                    - Input: I
+                    - Convolutional (filters, kernel_size, strides, padding): C-f10-k3-s2-pv
+                    - MaxPooling (pool_size, strides, padding): P-p2-s2-pv
+                    - Dropout (rate): D-0.5
+                    - Dense (units): H-100
+                    - Output: O
 
     Returns:
         model: tf.keras.Model
@@ -108,13 +115,23 @@ def build_model(inp_shape, output_size, instructions="I,O"):
 
         # Pooling layer
         if layer_name == "P":
-            pass
+
+            # Extract configuration
+            pattern = r"D([\d\.]*)"
+            match = re.match(pattern, layer_name)
+
+            # Ensure correct input
+            if not match:
+                wrn = "The argument for the dropout layer is not specified.\n"
+                wrn += "Omitting the layer and continuing the process.\n"
+                warnings.warn(wrn)
+                continue
 
         # Dropout layer
         if layer_name == "D":
 
             # Extract configuration
-            pattern = r"H-(\d*)"
+            pattern = r"D([\d\.]*)"
             match = re.match(pattern, layer_name)
 
             # Ensure correct input
@@ -137,7 +154,7 @@ def build_model(inp_shape, output_size, instructions="I,O"):
         if layer_name == "H":
 
             # Extract configuration
-            pattern = r"H-(\d*)"
+            pattern = r"H(\d*)"
             match = re.match(pattern, layer_name)
 
             # Ensure correct input
