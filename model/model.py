@@ -2,6 +2,7 @@
 # TODO: If the instructions do not include "i" as first and "o" as last argument, add the input and output layers anyway
 # TODO: The output layer should be a dense layer with the softmax activation
 import warnings
+import re
 import tensorflow as tf
 
 
@@ -82,21 +83,18 @@ def build_model(inp_shape, output_size, instructions="I,O"):
     # Chain the layers based on the instructrions
     for layer in layers:
 
-        # Extract the configuration
-        layer_config = layer.split("-")
-
         # Empty instruction
-        if not layer_config:
+        if not layer:
             wrn = "One of the layers in the instructions given was empty,\n"
             wrn += "i.e. the instructions parameter contains ',,'.\n"
             wrn += "Omitting the layer and continuing the process.\n"
             warnings.warn(wrn)
             continue
 
-        # Set up the name of the layer and its configuration
-        layer_name, layer_config = layer_config[0], layer_config[1:]
+        # Set up the name of the layer
+        layer_name = layer[0]
 
-        if not layer_config and layer_name != "O":
+        if len(layer) == 1 and layer_name != "O":
             wrn = "One of the hidden layers does not have specified parameters.\n"
             wrn += "Omitting the layer and continuing the process.\n"
             warnings.warn(wrn)
@@ -114,31 +112,46 @@ def build_model(inp_shape, output_size, instructions="I,O"):
 
         # Dropout layer
         if layer_name == "D":
-            pass
+
+            # Argument input management
+            if len(layer_config) > 1:
+                warnings.warn("Too many arguments specified for the dropout layer.\n")
+            try:
+                rate = float(layer_config[0])
+                if not 0 <= rate <= 1:
+                    raise ValueError
+            except ValueError:
+                wrn = "The first argument is not a valid entry for the dropout rate.\n"
+                wrn += "Omitting the layer and continuing the process.\n"
+                warnings.warn(wrn)
+                continue
+
+            hidden = tf.keras.layers.Dropout(rate)(hidden)
 
         # Densely connected layer
         if layer_name == "H":
 
-            # Argument input management
-            if len(layer_config) > 1:
-                wrn = "Too many arguments specified for the dense layer.\n"
-                # TODO: Try turning the first argument to an integer, if not possible, omit the layer (note that the elements are strings)
-                try:
-                    units = int(layer_config[0])
-                except ValueError:
-                    wrn += "The first argument is not a valid entry for the number of units.\n"
-                    wrn += "Omitting the layer and continuing the process.\n"
-                warnings.warn(warn)
-            pass
+            # Extract configuration
+            pattern = r"H-(\d*)"
+            match = re.match(pattern, layer_name)
+
+            # Ensure correct input
+            if not match:
+                wrn = "The argument for the dense layer is not specified.\n"
+                wrn += "Omitting the layer and continuing the process.\n"
+                warnings.warn(wrn)
+                continue
+
+            hidden = tf.keras.layers.Dense(int(match.group(1)))(hidden)
 
         # Output layer
         if layer_name == "O":
 
             # Adjust the output layer activation based on the output_size
             if output_size == 1:
-                output = tf.keras.layers.Dense(1, activation=tf.nn.sigmoid)
+                output = tf.keras.layers.Dense(1, activation=tf.nn.sigmoid)(hidden)
             else:
-                output = tf.keras.layers.Dense(output_size, activation=tf.nn.relu)
+                output = tf.keras.layers.Dense(output_size, activation=tf.nn.relu)(hidden)
 
         # Invalid layer name
         else:
