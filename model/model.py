@@ -21,26 +21,30 @@ def build_model(inp_shape, output_size, instructions="I,O"):
             Dimensions of the input (excluding the size of the batch).
         output_size: int
             Dimensions of the output. Output layer activation is automatically
-            adjusted based on this.
+            adjusted based on this (sigmoid for 1 and softmax otherwise)
         instructions: str (default "I,O")
             Instructions for the architecture of the model.
             The layers should be split by ',' while the parameters
             for the respective layers should be split by '-'.
             Note that the input and output layers are added automatically
             if the instructions do not include them as the first and last layers.
-                Example: "I,C-f64-k3-s2,C-f64-k3-s2,P-ps2-s2-tm,D-0.5,H-100,O"
+
+                Example: "I,C-f64-k3-s2,C-f64-k3-s2,P-ps2-s2-tm,D-0.5,F,H-100,O"
                     Creates a model with:
                         - input layer with shape inp_shape
                         - two convolutional layers with 64 filters,
                         window_size 3 and striding (2, 2)
                         - max pooling layer with pooling_size 2, striding (2, 2)
                         - dropout layer with dropout_rate 0.5
+                        - flatten layer
                         - densely connected layer with 100 units
-                        - output layer of size output_size
+                        - output layer of size output_size (softmax activation for output_size > 1)
+
                 Supported layers and their supported arguments:
                     - Input: I
                     - Convolutional (filters, kernel_size, strides): C-f10-k3-s2
                     - Pooling (pool_size, strides, type(one of average (a) or max (m))): P-p2-s2-ta
+                    - Flatten: F
                     - Dropout (rate): D-0.5
                     - Dense (units): H-100
                     - Output: O
@@ -244,6 +248,11 @@ def build_model(inp_shape, output_size, instructions="I,O"):
 
             hidden = tf.keras.layers.Dense(int(match.group(1)))(hidden)
 
+        # Flatten layer
+        if layer_name == "F":
+
+            hidden = tf.keras.layers.Flatten()(hidden)
+
         # Output layer
         if layer_name == "O":
 
@@ -251,7 +260,7 @@ def build_model(inp_shape, output_size, instructions="I,O"):
             if output_size == 1:
                 output = tf.keras.layers.Dense(1, activation=tf.nn.sigmoid)(hidden)
             else:
-                output = tf.keras.layers.Dense(output_size, activation=tf.nn.relu)(hidden)
+                output = tf.keras.layers.Dense(output_size, activation=tf.nn.softmax)(hidden)
 
         # Invalid layer name
         else:

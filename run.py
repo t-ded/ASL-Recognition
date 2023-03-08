@@ -31,7 +31,7 @@ import utils
 from collect_dataset import collect_data
 from showcase_collect_preprocessing import showcase_preprocessing
 from showcase_model import showcase_model
-from model.preprocessing import AdaptiveThresholding, Blurring
+from model.preprocessing import AdaptiveThresholding, Blurring, Grayscale
 from model.model import build_model
 
 parser = argparse.ArgumentParser()
@@ -209,15 +209,27 @@ def main(args):
         tb_callback = tf.keras.callbacks.TensorBoard(log_dir=tb_path,
                                                      histogram_freq=1)
 
+        # TODO: Add preprocessing pipeline building when finished
+        # Set the default preprocessing pipeline if not specified
+        if args.preprocessing_layers is None:
+            args.preprocessing_layers = config["Model"]["Default preprocessing"]
+        pipeline1 = tf.keras.models.Sequential(
+            [
+                Grayscale(),
+                Blurring(blurring_type="median", kernel_size=3, sigma=None),
+                AdaptiveThresholding(thresholding_type="mean", block_size=3, constant=-3),
+                tf.keras.layers.Rescaling(scale=(1. / 255))
+            ]
+        )
+
         # Set the default model architecture if not specified
         if args.architecture is None:
             args.architecture = config["Model"]["Default architecture"]
 
         # Build the model according to given instructions
-        # TODO: Change the inp_shape third dimension to 1 after the model is preceeded by preprocessing mode
         model = build_model(inp_shape=[config["General parameters"]["Image size"],
                                        config["General parameters"]["Image size"],
-                                       3],
+                                       1],
                             output_size=len(gestures), instructions=args.architecture)
 
         # Compile the modile according to given instructions
