@@ -113,15 +113,20 @@ def build_model(inp_shape, output_size, instructions="I,O"):
         # Dropout layer
         if layer_name == "D":
 
-            # Argument input management
-            if len(layer_config) > 1:
-                warnings.warn("Too many arguments specified for the dropout layer.\n")
-            try:
-                rate = float(layer_config[0])
-                if not 0 <= rate <= 1:
-                    raise ValueError
-            except ValueError:
-                wrn = "The first argument is not a valid entry for the dropout rate.\n"
+            # Extract configuration
+            pattern = r"H-(\d*)"
+            match = re.match(pattern, layer_name)
+
+            # Ensure correct input
+            if not match:
+                wrn = "The argument for the dropout layer is not specified.\n"
+                wrn += "Omitting the layer and continuing the process.\n"
+                warnings.warn(wrn)
+                continue
+
+            rate = float(match.group(1))
+            if not 0 <= rate <= 1:
+                wrn = "The argument for the dropout layer is not a number between 0 and 1.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
                 warnings.warn(wrn)
                 continue
