@@ -116,7 +116,7 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
         # Set up the name of the layer
         layer_name = layer[0]
 
-        if len(layer) == 1 and layer_name != "O":
+        if len(layer) == 1 and layer_name not in ["O", "F"]:
             wrn = "\nOne of the hidden layers does not have specified parameters.\n"
             wrn += "Omitting the layer and continuing the process.\n"
             warnings.warn(wrn)
