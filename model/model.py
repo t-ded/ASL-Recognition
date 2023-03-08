@@ -111,7 +111,42 @@ def build_model(inp_shape, output_size, instructions="I,O"):
 
         # Convolutional layer
         if layer_name == "C":
-            pass
+
+            # Extract configuration
+            pattern = r"f-(\d*)k-(\d*)s-(\d*)"
+            match = re.match(pattern, layer_name)
+
+            # Ensure correct input
+            if not match:
+                wrn = "The argument for the convolutional layer is not specified.\n"
+                wrn += "Omitting the layer and continuing the process.\n"
+                warnings.warn(wrn)
+                continue
+
+            # Ensure the number of filters is specified
+            filters = match.group(1)
+            if not filters:
+                wrn = "The number of filters for the convolutional layer is not specified.\n"
+                wrn += "Omitting the layer and continuing the process.\n"
+                warnings.warn(wrn)
+                continue
+
+            # Ensure the kernel size is specified
+            kernel_size = match.group(2)
+            if not filters:
+                wrn = "The kernel_size for the convolutional layer is not specified.\n"
+                wrn += "Omitting the layer and continuing the process.\n"
+                warnings.warn(wrn)
+                continue
+
+            # If strides is not specified, set it to default
+            strides = match.group(3)
+            if not strides:
+                strides = 1
+
+            hidden = tf.keras.layers.Conv2D(filters=int(filters),
+                                            kernel_size=int(kernel_size),
+                                            strides=int(strides))(hidden)
 
         # Pooling layer
         if layer_name == "P":
@@ -127,7 +162,7 @@ def build_model(inp_shape, output_size, instructions="I,O"):
                 warnings.warn(wrn)
                 continue
 
-            # Choose the correct type of the pooling layer
+            # Ensure the type of the pooling layer is specified
             pooling_type = match.group(1)
             if not pooling_type:
                 wrn = "The type for the pooling layer is not specified.\n"
@@ -135,12 +170,28 @@ def build_model(inp_shape, output_size, instructions="I,O"):
                 warnings.warn(wrn)
                 continue
 
+            # Ensure the pooling size is specified
+            pool_size = match.group(2)
+            if not filters:
+                wrn = "The pool_size for the pooling layer is not specified.\n"
+                wrn += "Omitting the layer and continuing the process.\n"
+                warnings.warn(wrn)
+                continue
+
+            # If strides is not specified, set it to default
+            strides = match.group(3)
+            if not strides:
+                strides = None
+            else:
+                strides = int(strides)
+
+            # Choose the correct type of the pooling layer
             if pooling_type == "a":
-                hidden = tf.keras.layers.AveragePooling2D(pool_size=int(match.group(2)),
-                                                          strides=int(match.group(3)))(hidden)
+                hidden = tf.keras.layers.AveragePooling2D(pool_size=pool_size,
+                                                          strides=strides)(hidden)
             elif pooling_type == "m":
-                hidden = tf.keras.layers.MaxPool2D(pool_size=int(match.group(2)),
-                                                   strides=int(match.group(3)))(hidden)
+                hidden = tf.keras.layers.MaxPool2D(pool_size=pool_size,
+                                                   strides=strides)(hidden)
             else:
                 wrn = "The type for the pooling layer is not valid.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
@@ -154,13 +205,14 @@ def build_model(inp_shape, output_size, instructions="I,O"):
             pattern = r"D-([\d\.]*)"
             match = re.match(pattern, layer_name)
 
-            # Ensure correct input
+            # Ensure the dropout rate is specified
             if not match:
                 wrn = "The argument for the dropout layer is not specified.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
                 warnings.warn(wrn)
                 continue
 
+            # Ensure correct input
             rate = float(match.group(1))
             if not 0 <= rate <= 1:
                 wrn = "The argument for the dropout layer is not a number between 0 and 1.\n"
@@ -177,7 +229,7 @@ def build_model(inp_shape, output_size, instructions="I,O"):
             pattern = r"H-(\d*)"
             match = re.match(pattern, layer_name)
 
-            # Ensure correct input
+            # Ensure the number of units is specified
             if not match:
                 wrn = "The argument for the dense layer is not specified.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
