@@ -144,7 +144,7 @@ def main(args):
                     return
 
             # Save the model as the current version
-            save_dir = os.path.join(model_dir, "current")
+            save_dir = current_dir
 
         else:
             # Adjust the experiment number accordingly if not given
@@ -178,7 +178,7 @@ def main(args):
 
             # Save the model in the respective experiment folder
             utils.new_folder(experiment_dir)
-            save_dir = os.path.join(model_dir, experiment_dir)
+            save_dir = experiment_dir
 
         # Loading the training and testing datasets from directories and optimizing them for performance
         AUTOTUNE = tf.data.AUTOTUNE
@@ -215,12 +215,25 @@ def main(args):
             args.preprocessing_layers = config["Model"]["Default preprocessing"]
         preprocessing = tf.keras.models.Sequential(
             [
+                tf.keras.layers.Input(shape=[config["General parameters"]["Image size"],
+                                             config["General parameters"]["Image size"],
+                                             3]),
                 Grayscale(),
                 Blurring(blurring_type="median", kernel_size=3, sigma=None),
                 AdaptiveThresholding(thresholding_type="mean", block_size=3, constant=-3),
                 tf.keras.layers.Rescaling(scale=(1. / 255))
             ],
             name="preprocessing_pipeline"
+        )
+        preprocessing = tf.keras.models.Sequential(
+            [
+                tf.keras.layers.Input(shape=[config["General parameters"]["Image size"],
+                                             config["General parameters"]["Image size"],
+                                             3]),
+                Grayscale(),
+                tf.keras.layers.Rescaling(scale=(1. / 255))
+            ],
+            name="preprocessing_pipeline1"
         )
 
         # Set the default model architecture if not specified
@@ -246,13 +259,10 @@ def main(args):
                       loss=tf.keras.losses.CategoricalCrossentropy(),
                       metrics=[tf.keras.metrics.CategoricalAccuracy(name="accuracy")])
 
-        # Show model summary, save the model diagram
+        # Show model summary
         print("\n\n ------------------------------------------------ \n\n")
         print("Model has been built, showing model summary now.")
         print(model.summary())
-        tf.keras.utils.plot_model(model,
-                                  os.path.join(save_dir, "model_diagram.png"),
-                                  show_shapes=True)
 
         # Save the initial weights as specified in the "checkpoint_path" format
         model.save_weights(cp_path.format(epoch=0))
@@ -262,6 +272,7 @@ def main(args):
                   epochs=args.epochs,
                   callbacks=[cp_callback, tb_callback])
 
+        print(save_dir)
         # Save the model into the appropriate folder
         model.save(filepath=save_dir,
                    overwrite=True)

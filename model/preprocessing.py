@@ -88,4 +88,4 @@ class Grayscale(tf.keras.layers.Layer):
 
     def get_config(self):
 
-        return super(Blurring, self).get_config()
+        return super(Grayscale, self).get_config()

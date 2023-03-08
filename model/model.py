@@ -96,7 +96,7 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
             raise ValueError("The instructions for the model included output layer somewhere else than as the last layer.")
 
     # Initialize the input layer
-    inp = tf.keras.layers.Input(shape=inp_shape)
+    inp = tf.keras.layers.Input(shape=inp_shape, name="trainable_input")
     hidden = inp
 
     # Parse the instructions
@@ -116,7 +116,7 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
         # Set up the name of the layer
         layer_name = layer[0]
 
-        if len(layer) == 1 and layer_name not in ["O", "F"]:
+        if len(layer) == 1 and layer_name not in ["I", "O", "F"]:
             wrn = "\nOne of the hidden layers does not have specified parameters.\n"
             wrn += "Omitting the layer and continuing the process.\n"
             warnings.warn(wrn)
@@ -137,7 +137,7 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
 
             # Ensure the kernel size is specified
             kernel_size = re.search(r"-k(\d*)", layer).group(1)
-            if not filters:
+            if not kernel_size:
                 wrn = "\nThe kernel_size for the convolutional layer is not specified.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
                 warnings.warn(wrn)
@@ -165,7 +165,7 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
 
             # Ensure the pooling size is specified
             pool_size = re.search(r"-p(\d*)", layer).group(1)
-            if not filters:
+            if not pool_size:
                 wrn = "\nThe pool_size for the pooling layer is not specified.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
                 warnings.warn(wrn)
@@ -180,10 +180,10 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
 
             # Choose the correct type of the pooling layer
             if pooling_type == "a":
-                hidden = tf.keras.layers.AveragePooling2D(pool_size=pool_size,
+                hidden = tf.keras.layers.AveragePooling2D(pool_size=int(pool_size),
                                                           strides=strides)(hidden)
             elif pooling_type == "m":
-                hidden = tf.keras.layers.MaxPool2D(pool_size=pool_size,
+                hidden = tf.keras.layers.MaxPool2D(pool_size=int(pool_size),
                                                    strides=strides)(hidden)
             else:
                 wrn = "\nThe type for the pooling layer is not valid.\n"
@@ -241,9 +241,13 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
 
             # Adjust the output layer activation based on the output_size
             if output_size == 1:
-                output = tf.keras.layers.Dense(1, activation=tf.nn.sigmoid)(hidden)
+                output = tf.keras.layers.Dense(1,
+                                               activation=tf.nn.sigmoid,
+                                               name="sigmoid_output")(hidden)
             else:
-                output = tf.keras.layers.Dense(output_size, activation=tf.nn.softmax)(hidden)
+                output = tf.keras.layers.Dense(output_size,
+                                               activation=tf.nn.softmax,
+                                               name="softmax_output")(hidden)
 
         # Invalid layer name
         else:
