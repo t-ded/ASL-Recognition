@@ -213,13 +213,14 @@ def main(args):
         # Set the default preprocessing pipeline if not specified
         if args.preprocessing_layers is None:
             args.preprocessing_layers = config["Model"]["Default preprocessing"]
-        pipeline1 = tf.keras.models.Sequential(
+        preprocessing = tf.keras.models.Sequential(
             [
                 Grayscale(),
                 Blurring(blurring_type="median", kernel_size=3, sigma=None),
                 AdaptiveThresholding(thresholding_type="mean", block_size=3, constant=-3),
                 tf.keras.layers.Rescaling(scale=(1. / 255))
-            ]
+            ],
+            name="preprocessing_pipeline"
         )
 
         # Set the default model architecture if not specified
@@ -227,14 +228,17 @@ def main(args):
             args.architecture = config["Model"]["Default architecture"]
 
         # Build the model according to given instructions
-        model = build_model(inp_shape=[config["General parameters"]["Image size"],
-                                       config["General parameters"]["Image size"],
-                                       1],
-                            output_size=len(gestures), instructions=args.architecture)
+        trainable = build_model(inp_shape=[config["General parameters"]["Image size"],
+                                           config["General parameters"]["Image size"],
+                                           1],
+                                output_size=len(gestures),
+                                instructions=args.architecture,
+                                name="trainable_layers")
 
         # Merge the preprocessing pipeline with the trainable layers
-        # TODO
-        
+        model = tf.keras.Model(inputs=preprocessing.input,
+                               outputs=trainable(preprocessing.output),
+                               name="full_model")
 
         # Compile the modile according to given instructions
         # TODO: Include optimizer selection + adjustment of learning rate
