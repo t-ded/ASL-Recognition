@@ -119,8 +119,8 @@ def build_model(inp_shape, output_size, instructions="I,O"):
         if layer_name == "C":
 
             # Extract configuration
-            pattern = r"f-(\d*)k-(\d*)s-(\d*)"
-            match = re.match(pattern, layer_name)
+            pattern = r"-f(\d*)-k(\d*)-s(\d*)"
+            match = re.search(pattern, layer)
 
             # Ensure correct input
             if not match:
@@ -158,8 +158,8 @@ def build_model(inp_shape, output_size, instructions="I,O"):
         if layer_name == "P":
 
             # Extract configuration
-            pattern = r"t-(\w)p-(\d*)s-(\d*)"
-            match = re.match(pattern, layer_name)
+            pattern = r"-t(\w)-p(\d*)-s(\d*)"
+            match = re.search(pattern, layer)
 
             # Ensure correct input
             if not match:
@@ -209,7 +209,7 @@ def build_model(inp_shape, output_size, instructions="I,O"):
 
             # Extract configuration
             pattern = r"D-([\d\.]*)"
-            match = re.match(pattern, layer_name)
+            match = re.search(pattern, layer)
 
             # Ensure the dropout rate is specified
             if not match:
@@ -219,7 +219,7 @@ def build_model(inp_shape, output_size, instructions="I,O"):
                 continue
 
             # Ensure correct input
-            rate = float(match.group())
+            rate = float(match.group(1))
             if not 0 <= rate <= 1:
                 wrn = "\nThe argument for the dropout layer is not a number between 0 and 1.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
@@ -233,7 +233,7 @@ def build_model(inp_shape, output_size, instructions="I,O"):
 
             # Extract configuration
             pattern = r"H-(\d*)"
-            match = re.match(pattern, layer_name)
+            match = re.search(pattern, layer)
 
             # Ensure the number of units is specified
             if not match:
@@ -242,7 +242,7 @@ def build_model(inp_shape, output_size, instructions="I,O"):
                 warnings.warn(wrn)
                 continue
 
-            hidden = tf.keras.layers.Dense(int(match.group()))(hidden)
+            hidden = tf.keras.layers.Dense(int(match.group(1)))(hidden)
 
         # Output layer
         if layer_name == "O":

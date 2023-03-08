@@ -93,7 +93,7 @@ def main(args):
     experiments_dir = os.path.join(model_dir, "experiments")
     current_dir = os.path.join(model_dir, "current")
     print("The folders have been set up.")
-    print("\n\n\n ------------------------------------------------ \n\n\n")
+    print("\n\n ------------------------------------------------ \n\n")
 
     # Collection of the data
     if args.collect:
@@ -226,7 +226,7 @@ def main(args):
                       loss=tf.keras.losses.CategoricalCrossentropy(),
                       metrics=[tf.keras.metrics.CategoricalAccuracy(name="accuracy")])
 
-        print("\n\n\n ------------------------------------------------ \n\n\n")
+        print("\n\n ------------------------------------------------ \n\n")
         print("Model has been built, showing model summary now.")
         print(model.summary())
 
