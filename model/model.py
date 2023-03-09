@@ -10,7 +10,7 @@ on the following topic:
 import warnings
 import re
 import tensorflow as tf
-from preprocessing import Grayscale, AdaptiveThresholding, Blurring
+from model.preprocessing import Grayscale, AdaptiveThresholding, Blurring
 
 
 def build_model(inp_shape, output_size, name="model", instructions="I,O"):

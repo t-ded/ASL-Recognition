@@ -32,6 +32,7 @@ import utils
 from collect_dataset import collect_data
 from showcase_collect_preprocessing import showcase_preprocessing
 from showcase_model import showcase_model
+from model.preprocessing import Grayscale, AdaptiveThresholding, Blurring
 from model.model import build_model, build_preprocessing
 
 parser = argparse.ArgumentParser()
@@ -281,7 +282,8 @@ def main(args):
         try:
             model = tf.keras.models.load_model(filepath=config["Model"]["Current model"],
                                                custom_objects={"AdaptiveThresholding": AdaptiveThresholding,
-                                                               "Blurring": Blurring})
+                                                               "Blurring": Blurring,
+                                                               "Grayscale": Grayscale})
         except IOError:
             print("The prediction procedure was chosen but model cannot be found",
                   f"in the folder specified in the config.json file ({config['Model']['Current model']}).\n",
