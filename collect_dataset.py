@@ -167,14 +167,14 @@ def collect_data(gesture_list, examples="Examples", data_directory="Data",
                     rect = [rect_torso, rect_fingerspell_1, rect_fingerspell_2][rectangle_position % 3]
 
                 # Live view with frame and text (colorcoded to indicate whether images are being saved)
-                if current - current_amounts[gesture] > 65:
+                if current - current_amounts[gesture] > 75:
                     cv2.rectangle(frame, rect[0], rect[3], (0, 255, 0), 2)
                 else:
                     cv2.rectangle(frame, rect[0], rect[3], (0, 0, 255), 2)
                 txt = gesture.capitalize()
                 if not lang:
                     txt = dictionary[txt]
-                if current - current_amounts[gesture] > 65:
+                if current - current_amounts[gesture] > 75:
                     cv2.putText(frame, txt, (rect[0][0], rect[0][1] - 15),
                                 cv2.FONT_HERSHEY_DUPLEX, 1, (0, 255, 0), 2)
                 else:
@@ -193,12 +193,12 @@ def collect_data(gesture_list, examples="Examples", data_directory="Data",
                     cv2.resizeWindow("BigExample", 1280, 720)
                     cv2.moveWindow("BigExample", 125, 50)
                     cv2.imshow("BigExample", cv2.resize(example, (1280, 720)))
-                    cv2.waitKey(1500)
+                    cv2.waitKey(2000)
                     cv2.destroyWindow("BigExample")
 
                 # To reduce the number of almost identical frames, only save every n frames
                 # To give space for adjustments and "learning" a new sign, only start collecting after some time
-                if not current % 3 and current - current_amounts[gesture] > 70:
+                if not current % 10 and current - current_amounts[gesture] > 80:
 
                     # Create the naming for the file with the desired padding, i.e. ("gesture_run-number.jpg")
                     img_name = gesture + "_" + str(counter) + ".jpg"

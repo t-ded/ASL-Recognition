@@ -2,8 +2,10 @@
 # disable=C0301, C0103, E1101
 # TODO: Adjust README.md file
 # TODO: Adjust the docstring for this run function
-# TODO: Fill in the docstring and comments for classes and their methods in preprocessing.py file
-# TODO: Repair the saving of preprocessing pipelines
+# TODO: Fill in the docstrings for classes and their methods in preprocessing.py file
+
+# TODO: Add blank line function to utils.py (does not have to take any argument, just print \n\n\n ---------- \n\n\n)
+# and then use this to logically divide terminal outputs for this function
 """
 A simple function to enable running
 the different scripts from command line.
@@ -26,8 +28,8 @@ import argparse
 import os
 import re
 import datetime
-import tensorflow as tf
 import json
+import tensorflow as tf
 import utils
 from collect_dataset import collect_data
 from showcase_collect_preprocessing import showcase_preprocessing
@@ -58,9 +60,6 @@ hyperparameters.add_argument("--regularization", default=None, choices=["l1", "l
 hyperparameters.add_argument("--dropout", default=0.5, type=float, help="Dropout rate for the dropout layers")
 hyperparameters.add_argument("--seed", default=123, type=int, help="Random seed for operations including randomness (e.g. shuffling)")
 hyperparameters.add_argument("--split", default=0.2, type=float, help="Portion of the full dataset to reserve for validation")
-
-# TODO: Create architecture building functionality for preprocessing using build_preprocessing function
-# TODO: Refactor the custom preprocessing layers so that they support prefetched dataset as their input
 
 # Specify the architecture for the given experiment if training procedure is set
 architecture = parser.add_argument_group("Architecture")
@@ -183,7 +182,6 @@ def main(args):
             save_dir = experiment_dir
 
         # Loading the training and testing datasets from directories and optimizing them for performance
-        AUTOTUNE = tf.data.AUTOTUNE
         train_images, test_images = tf.keras.preprocessing.image_dataset_from_directory(data_dir,
                                                                                         labels="inferred",
                                                                                         label_mode="categorical",
@@ -196,8 +194,8 @@ def main(args):
                                                                                         seed=args.seed,
                                                                                         validation_split=args.split,
                                                                                         subset="both")
-        train_images = train_images.prefetch(buffer_size=AUTOTUNE)
-        test_images = test_images.prefetch(buffer_size=AUTOTUNE)
+        train_images = train_images.prefetch(buffer_size=tf.data.AUTOTUNE)
+        test_images = test_images.prefetch(buffer_size=tf.data.AUTOTUNE)
 
         # Set up the log directories for checkpoints and tensorboard
         cp_path = os.path.join(save_dir, "ckpt/cp-{epoch:03d}.ckpt")
