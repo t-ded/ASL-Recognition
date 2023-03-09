@@ -32,7 +32,6 @@ import utils
 from collect_dataset import collect_data
 from showcase_collect_preprocessing import showcase_preprocessing
 from showcase_model import showcase_model
-from model.preprocessing import AdaptiveThresholding, Blurring, Grayscale
 from model.model import build_model, build_preprocessing
 
 parser = argparse.ArgumentParser()
@@ -219,28 +218,21 @@ def main(args):
         # Build the preprocessing pipeline according to given instructions
         preprocessing = build_preprocessing(inp_shape=[img_size,
                                                        img_size,
-                                                       1])
-        preprocessing = tf.keras.models.Sequential(
-            [
-                tf.keras.layers.Input(shape=[img_size,
-                                             img_size,
-                                             3]),
-                Grayscale(),
-                Blurring(blurring_type="median", kernel_size=3, sigma=None),
-                AdaptiveThresholding(thresholding_type="mean", block_size=3, constant=-3),
-                tf.keras.layers.Rescaling(scale=(1. / 255))
-            ],
-            name="preprocessing_pipeline"
-        )
+                                                       3],
+                                            instructions=args.preprocessing_layers,
+                                            name="preprocessing_pipeline")
 
         # Set the default model architecture if not specified
         if args.architecture is None:
             args.architecture = config["Model"]["Default architecture"]
 
+        # Adjust the number of input channels for the trainable layers based on grayscale layer presence
+        channels = 1 if "G" in args.preprocessing_layers else 3
+
         # Build the model according to given instructions
         trainable = build_model(inp_shape=[img_size,
                                            img_size,
-                                           1],
+                                           channels],
                                 output_size=len(gestures),
                                 instructions=args.architecture,
                                 name="trainable_layers")

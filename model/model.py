@@ -31,6 +31,9 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
             for the respective layers should be split by '-'.
             Note that the input and output layers are added automatically
             if the instructions do not include them as the first and last layers.
+            Also note that the dense layers (including the output layer) should
+            ideally receive a 1 dimensional input. Flatten layers are automatically
+            added in case this criterion is not met.
 
                 Example: "I,C-f64-k3-s2,C-f64-k3-s2,P-ps2-s2-tm,D-0.5,F,H-100,O"
                     Creates a model with:
@@ -100,6 +103,9 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
         if instructions.index("O") != len(instructions) - 1:
             raise ValueError("The instructions for the model included output layer somewhere else than as the last layer.")
 
+    # Ensure the correct dimensions along the layers of the model
+    flatten_flag = 0
+
     # Initialize the input layer
     inp = tf.keras.layers.Input(shape=inp_shape, name="trainable_input")
     hidden = inp
@@ -153,9 +159,16 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
             if not strides:
                 strides = 1
 
-            hidden = tf.keras.layers.Conv2D(filters=int(filters),
-                                            kernel_size=int(kernel_size),
-                                            strides=int(strides))(hidden)
+            # If the input is flattened, use 1D convolution
+            if flatten_flag:
+                hidden = tf.keras.layers.Conv1D(filters=int(filters),
+                                                kernel_size=int(kernel_size),
+                                                strides=int(strides))(hidden)
+                flatten_flag = 1
+            else:
+                hidden = tf.keras.layers.Conv2D(filters=int(filters),
+                                                kernel_size=int(kernel_size),
+                                                strides=int(strides))(hidden)
 
         # Pooling layer
         elif layer_name == "P":
@@ -185,11 +198,26 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
 
             # Choose the correct type of the pooling layer
             if pooling_type == "a":
-                hidden = tf.keras.layers.AveragePooling2D(pool_size=int(pool_size),
-                                                          strides=strides)(hidden)
+
+                # If the current input is flattened, use 1D pooling
+                if flatten_flag:
+                    hidden = tf.keras.layers.AveragePooling1D(pool_size=int(pool_size),
+                                                              strides=strides)(hidden)
+                    flatten_flag = 0
+                else:
+                    hidden = tf.keras.layers.AveragePooling2D(pool_size=int(pool_size),
+                                                              strides=strides)(hidden)
             elif pooling_type == "m":
-                hidden = tf.keras.layers.MaxPool2D(pool_size=int(pool_size),
-                                                   strides=strides)(hidden)
+
+                # If the current input is flattened, use 1D pooling
+                if flatten_flag:
+                    hidden = tf.keras.layers.MaxPool1D(pool_size=int(pool_size),
+                                                       strides=strides)(hidden)
+                    flatten_flag = 0
+                else:
+                    hidden = tf.keras.layers.MaxPool2D(pool_size=int(pool_size),
+                                                       strides=strides)(hidden)
+
             else:
                 wrn = "\nThe type for the pooling layer is not valid.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
@@ -223,6 +251,11 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
         # Densely connected layer
         elif layer_name == "H":
 
+            # Make sure the current input is flattened
+            if not flatten_flag:
+                hidden = tf.keras.layers.Flatten()(hidden)
+                flatten_flag = 1
+
             # Extract configuration
             pattern = r"H-(\d*)"
             match = re.search(pattern, layer)
@@ -239,10 +272,16 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
         # Flatten layer
         elif layer_name == "F":
 
+            flatten_flag = 1
             hidden = tf.keras.layers.Flatten()(hidden)
 
         # Output layer
         elif layer_name == "O":
+
+            # Make sure the current input is flattened
+            if not flatten_flag:
+                hidden = tf.keras.layers.Flatten()(hidden)
+                flatten_flag = 1
 
             # Adjust the output layer activation based on the output_size
             if output_size == 1:
@@ -377,7 +416,7 @@ def build_preprocessing(inp_shape, name="preprocessing", instructions="I,G"):
             continue
 
         # Blurring layer
-        if layer_name == "B":
+        elif layer_name == "B":
 
             # Ensure the type of the blurring layer is specified
             blurring_type = re.search(r"-t(\w)", layer).group(1)
@@ -422,7 +461,7 @@ def build_preprocessing(inp_shape, name="preprocessing", instructions="I,G"):
                                      sigma=float(sigma))(preprocessing)
 
         # Adaptive thresholding layer
-        if layer_name == "T":
+        elif layer_name == "T":
 
             # Ensure the settings for the thresholding layer are valid (i.e. preceded by a grayscale layer)
             if grayscale_limit:
@@ -474,7 +513,7 @@ def build_preprocessing(inp_shape, name="preprocessing", instructions="I,G"):
                                                  constant=float(constant))(preprocessing)
 
         # Rescaling layer
-        elif layer_name == "G":
+        elif layer_name == "R":
 
             preprocessing = tf.keras.layers.Rescaling(scale=(1. / 255))(preprocessing)
 
