@@ -33,7 +33,7 @@ from collect_dataset import collect_data
 from showcase_collect_preprocessing import showcase_preprocessing
 from showcase_model import showcase_model
 from model.preprocessing import AdaptiveThresholding, Blurring, Grayscale
-from model.model import build_model
+from model.model import build_model, build_preprocessing
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--config_dir", default="", type=str, help="Directory with the config.json file")
@@ -93,6 +93,7 @@ def main(args):
                                                                                                   amount_per_gesture=config["General parameters"]["Desired amount"])
     experiments_dir = os.path.join(model_dir, "experiments")
     current_dir = os.path.join(model_dir, "current")
+    img_size = config["General parameters"]["Image size"]
     print("The folders have been set up.")
     print("\n\n ------------------------------------------------ \n\n")
 
@@ -118,7 +119,7 @@ def main(args):
                      data_directory=data_dir, current_amounts=current_amount,
                      desired_amounts=desired_amount, gesture_paths=paths,
                      translations=config["Paths"]["Translations"],
-                     img_size=config["General parameters"]["Image size"])
+                     img_size=img_size)
         print("Your data has been collected, please check the folders.")
 
     # Showcase various preprocessing pipelines and enable saving their outputs
@@ -188,8 +189,8 @@ def main(args):
                                                                                         label_mode="categorical",
                                                                                         class_names=gestures,
                                                                                         batch_size=args.batch_size,
-                                                                                        image_size=(config["General parameters"]["Image size"],
-                                                                                                    config["General parameters"]["Image size"]),
+                                                                                        image_size=(img_size,
+                                                                                                    img_size),
                                                                                         shuffle=True,
                                                                                         seed=args.seed,
                                                                                         validation_split=args.split,
@@ -214,10 +215,15 @@ def main(args):
         # Set the default preprocessing pipeline if not specified
         if args.preprocessing_layers is None:
             args.preprocessing_layers = config["Model"]["Default preprocessing"]
+
+        # Build the preprocessing pipeline according to given instructions
+        preprocessing = build_preprocessing(inp_shape=[img_size,
+                                                       img_size,
+                                                       1])
         preprocessing = tf.keras.models.Sequential(
             [
-                tf.keras.layers.Input(shape=[config["General parameters"]["Image size"],
-                                             config["General parameters"]["Image size"],
+                tf.keras.layers.Input(shape=[img_size,
+                                             img_size,
                                              3]),
                 Grayscale(),
                 Blurring(blurring_type="median", kernel_size=3, sigma=None),
@@ -226,24 +232,14 @@ def main(args):
             ],
             name="preprocessing_pipeline"
         )
-        preprocessing = tf.keras.models.Sequential(
-            [
-                tf.keras.layers.Input(shape=[config["General parameters"]["Image size"],
-                                             config["General parameters"]["Image size"],
-                                             3]),
-                Grayscale(),
-                tf.keras.layers.Rescaling(scale=(1. / 255))
-            ],
-            name="preprocessing_pipeline1"
-        )
 
         # Set the default model architecture if not specified
         if args.architecture is None:
             args.architecture = config["Model"]["Default architecture"]
 
         # Build the model according to given instructions
-        trainable = build_model(inp_shape=[config["General parameters"]["Image size"],
-                                           config["General parameters"]["Image size"],
+        trainable = build_model(inp_shape=[img_size,
+                                           img_size,
                                            1],
                                 output_size=len(gestures),
                                 instructions=args.architecture,
@@ -285,7 +281,7 @@ def main(args):
         showcase_model(gestures, examples=example_dir,
                        predict=False, model=None,
                        translations=config["Paths"]["Translations"],
-                       img_size=config["General parameters"]["Image size"])
+                       img_size=img_size)
 
     # Demonstrate the image taking process while also demonstrating the model and its predictions
     elif args.predict:
@@ -305,7 +301,7 @@ def main(args):
         showcase_model(gestures, examples=example_dir,
                        predict=True, model=model,
                        translations=config["Paths"]["Translations"],
-                       img_size=config["General parameters"]["Image size"])
+                       img_size=img_size)
 
 
 if __name__ == "__main__":
