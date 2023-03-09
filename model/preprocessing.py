@@ -91,7 +91,7 @@ class Blurring(tf.keras.layers.Layer):
 
 class Grayscale(tf.keras.layers.Layer):
 
-    def __init__(self):
+    def __init__(self, **kwargs):
 
         super(Grayscale, self).__init__()
 
