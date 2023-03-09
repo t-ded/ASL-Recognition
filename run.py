@@ -262,7 +262,6 @@ def main(args):
                   epochs=args.epochs,
                   callbacks=[cp_callback, tb_callback])
 
-        print(save_dir)
         # Save the model into the appropriate folder
         model.save(filepath=save_dir,
                    overwrite=True)

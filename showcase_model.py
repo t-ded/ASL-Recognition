@@ -169,11 +169,14 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
                     prediction = model(frame_cut[None, :],
                                        training=False).numpy()
                     probability = prediction.max(axis=-1).round(2)
-                    txt = gesture_list[np.argmax(prediction, axis=1)[0]] + " (" + str(probability[0]) + ")"
+                    txt = gesture_list[np.argmax(prediction, axis=1)[0]]
+                    if not lang:
+                        txt = dictionary[txt]
+                    txt += " (" + str(probability[0]) + ")"
                 else:
                     txt = gesture.capitalize()
-                if not lang:
-                    txt = dictionary[txt]
+                    if not lang:
+                        txt = dictionary[txt]
                 cv2.putText(frame, txt, (rect[0][0], rect[0][1] - 15),
                             cv2.FONT_HERSHEY_DUPLEX, 1, (0, 255, 0), 2)
                 cv2.imshow("Camera view", frame)
