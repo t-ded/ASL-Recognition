@@ -188,6 +188,7 @@ def main(args):
                                                                                         labels="inferred",
                                                                                         label_mode="categorical",
                                                                                         class_names=gestures,
+                                                                                        color_mode="rgb",
                                                                                         batch_size=args.batch_size,
                                                                                         image_size=(img_size,
                                                                                                     img_size),
@@ -195,8 +196,8 @@ def main(args):
                                                                                         seed=args.seed,
                                                                                         validation_split=args.split,
                                                                                         subset="both")
-        train_images = train_images.cache().prefetch(buffer_size=AUTOTUNE)
-        test_images = test_images.cache().prefetch(buffer_size=AUTOTUNE)
+        train_images = train_images.prefetch(buffer_size=AUTOTUNE)
+        test_images = test_images.prefetch(buffer_size=AUTOTUNE)
 
         # Set up the log directories for checkpoints and tensorboard
         cp_path = os.path.join(save_dir, "ckpt/cp-{epoch:03d}.ckpt")
@@ -211,7 +212,6 @@ def main(args):
         tb_callback = tf.keras.callbacks.TensorBoard(log_dir=tb_path,
                                                      histogram_freq=1)
 
-        # TODO: Add preprocessing pipeline building when finished
         # Set the default preprocessing pipeline if not specified
         if args.preprocessing_layers is None:
             args.preprocessing_layers = config["Model"]["Default preprocessing"]
@@ -239,7 +239,6 @@ def main(args):
                                 name="trainable_layers")
 
         # Merge the preprocessing pipeline with the trainable layers
-        # TODO: Adjust this correctly after you finish preprocessing pipeline building functionality
         model = tf.keras.Model(inputs=preprocessing.input,
                                outputs=trainable(preprocessing.output),
                                name="full_model")

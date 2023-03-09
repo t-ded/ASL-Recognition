@@ -383,7 +383,8 @@ def build_preprocessing(inp_shape, name="preprocessing", instructions="I,G"):
         warnings.warn(wrn)
 
     # Initialize the input layer
-    inp = tf.keras.layers.Input(shape=inp_shape, name="preprocessing_input")
+    inp = tf.keras.layers.Input(shape=inp_shape, name="preprocessing_input",
+                                dtype=tf.uint8)
     preprocessing = inp
 
     # Parse the instructions

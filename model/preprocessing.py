@@ -25,20 +25,25 @@ class AdaptiveThresholding(tf.keras.layers.Layer):
 
         def apply_thresholding(image):
 
-            img = tf.cast(image, tf.uint8).numpy()
+            img = image.numpy()
 
             if self.thresholding_type == "mean":
-                return cv2.adaptiveThreshold(img, 255,
-                                             cv2.ADAPTIVE_THRESH_MEAN_C,
-                                             cv2.THRESH_BINARY_INV,
-                                             self.block_size, self.constant)
+                return tf.convert_to_tensor(cv2.adaptiveThreshold(img, 255,
+                                                                  cv2.ADAPTIVE_THRESH_MEAN_C,
+                                                                  cv2.THRESH_BINARY_INV,
+                                                                  self.block_size, self.constant),
+                                            dtype=tf.uint8)
 
-            return cv2.adaptiveThreshold(img, 255,
-                                         cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                         cv2.THRESH_BINARY_INV,
-                                         self.block_size, self.constant)
+            return tf.convert_to_tensor(cv2.adaptiveThreshold(img, 255,
+                                                              cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                                              cv2.THRESH_BINARY_INV,
+                                                              self.block_size, self.constant),
+                                        dtype=tf.uint8)
 
-        return tf.py_function(func=apply_thresholding, inp=[input_batch], Tout=tf.uint8)
+        return tf.map_fn(lambda image: tf.py_function(func=apply_thresholding,
+                                                      inp=[image],
+                                                      Tout=tf.uint8),
+                         input_batch)
 
     def get_config(self):
 
