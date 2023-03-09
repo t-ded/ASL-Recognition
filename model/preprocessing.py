@@ -45,6 +45,9 @@ class AdaptiveThresholding(tf.keras.layers.Layer):
                                                       Tout=tf.uint8),
                          input_batch)
 
+    def compute_output_shape(self, input_shape):
+        return input_shape
+
     def get_config(self):
 
         config = super(AdaptiveThresholding, self).get_config()
