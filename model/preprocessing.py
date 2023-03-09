@@ -25,28 +25,32 @@ class AdaptiveThresholding(tf.keras.layers.Layer):
 
         def apply_thresholding(image):
 
+            # OpenCV adaptive thresholding only accepts numpy arrays
             img = image.numpy()
 
+            # Perform thresholding based on specified type
             if self.thresholding_type == "mean":
-                return tf.convert_to_tensor(cv2.adaptiveThreshold(img, 255,
-                                                                  cv2.ADAPTIVE_THRESH_MEAN_C,
-                                                                  cv2.THRESH_BINARY_INV,
-                                                                  self.block_size, self.constant),
-                                            dtype=tf.uint8)
+                thresholded_img = cv2.adaptiveThreshold(img, 255,
+                                                        cv2.ADAPTIVE_THRESH_MEAN_C,
+                                                        cv2.THRESH_BINARY_INV,
+                                                        self.block_size, self.constant)
 
-            return tf.convert_to_tensor(cv2.adaptiveThreshold(img, 255,
-                                                              cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                                              cv2.THRESH_BINARY_INV,
-                                                              self.block_size, self.constant),
-                                        dtype=tf.uint8)
+            else:
+                thresholded_img = cv2.adaptiveThreshold(img, 255,
+                                                        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
+                                                        cv2.THRESH_BINARY_INV,
+                                                        self.block_size, self.constant)
 
+            # Output for this function should be tensors of shape (img_size, img_size, 1)
+            return tf.expand_dims(tf.convert_to_tensor(thresholded_img,
+                                                       dtype=tf.uint8),
+                                  axis=-1)
+
+        # Perform the thresholding per image in a batch
         return tf.map_fn(lambda image: tf.py_function(func=apply_thresholding,
                                                       inp=[image],
                                                       Tout=tf.uint8),
                          input_batch)
-
-    def compute_output_shape(self, input_shape):
-        return input_shape
 
     def get_config(self):
 
@@ -69,6 +73,7 @@ class Blurring(tf.keras.layers.Layer):
 
     def call(self, input_batch):
 
+        # Perform blurring based on specified type
         if self.blurring_type == "median":
             return tfa.image.median_filter2d(input_batch, self.kernel_size)
 
