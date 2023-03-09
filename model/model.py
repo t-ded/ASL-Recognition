@@ -139,25 +139,29 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
         if layer_name == "C":
 
             # Ensure the number of filters is specified
-            filters = re.search(r"-f(\d*)", layer).group(1)
-            if not filters:
+            match = re.search(r"-f(\d*)", layer)
+            if not match:
                 wrn = "\nThe number of filters for the convolutional layer is not specified.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
                 warnings.warn(wrn)
                 continue
+            filters = match.group(1)
 
             # Ensure the kernel size is specified
-            kernel_size = re.search(r"-k(\d*)", layer).group(1)
-            if not kernel_size:
+            match = re.search(r"-k(\d*)", layer)
+            if not match:
                 wrn = "\nThe kernel_size for the convolutional layer is not specified.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
                 warnings.warn(wrn)
                 continue
+            kernel_size = match.group(1)
 
             # If strides is not specified, set it to default
-            strides = re.search(r"-k(\d*)", layer).group(1)
+            strides = re.search(r"-k(\d*)", layer)
             if not strides:
                 strides = 1
+            else:
+                strides = strides.group(1)
 
             # If the input is flattened, use 1D convolution
             if flatten_flag:
@@ -174,29 +178,31 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
         elif layer_name == "P":
 
             # Ensure the type of the pooling layer is specified
-            pooling_type = re.search(r"-t(\w)", layer).group(1)
-            if not pooling_type:
+            match = re.search(r"-t(\w)", layer)
+            if not match:
                 wrn = "\nThe type for the pooling layer is not specified.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
                 warnings.warn(wrn)
                 continue
+            pooling_type = match.group(1)
 
             # Ensure the pooling size is specified
-            pool_size = re.search(r"-p(\d*)", layer).group(1)
-            if not pool_size:
+            match = re.search(r"-p(\d*)", layer)
+            if not match:
                 wrn = "\nThe pool_size for the pooling layer is not specified.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
                 warnings.warn(wrn)
                 continue
+            pool_size = match.group(1)
 
             # If strides is not specified, set it to default
-            strides = re.search(r"-s(\d*)", layer).group(1)
-            if not strides:
+            match = re.search(r"-s(\d*)", layer)
+            if not match:
                 strides = None
             else:
-                strides = int(strides)
+                strides = int(match.group(1))
 
-            # Choose the correct type of the pooling layer
+            # Choose the correct type of the pooling layer and ensure it is valid
             if pooling_type == "a":
 
                 # If the current input is flattened, use 1D pooling
@@ -251,11 +257,6 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
         # Densely connected layer
         elif layer_name == "H":
 
-            # Make sure the current input is flattened
-            if not flatten_flag:
-                hidden = tf.keras.layers.Flatten()(hidden)
-                flatten_flag = 1
-
             # Extract configuration
             pattern = r"H-(\d*)"
             match = re.search(pattern, layer)
@@ -266,6 +267,11 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
                 wrn += "Omitting the layer and continuing the process.\n"
                 warnings.warn(wrn)
                 continue
+
+            # Make sure the current input is flattened
+            if not flatten_flag:
+                hidden = tf.keras.layers.Flatten()(hidden)
+                flatten_flag = 1
 
             hidden = tf.keras.layers.Dense(int(match.group(1)))(hidden)
 
@@ -419,14 +425,15 @@ def build_preprocessing(inp_shape, name="preprocessing", instructions="I,G"):
         elif layer_name == "B":
 
             # Ensure the type of the blurring layer is specified
-            blurring_type = re.search(r"-t(\w)", layer).group(1)
-            if not blurring_type:
+            match = re.search(r"-t(\w)", layer)
+            if not match:
                 wrn = "\nThe type for the blurring layer is not specified.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
                 warnings.warn(wrn)
                 continue
+            blurring_type = match.group(1)
 
-            # Choose the correct type of the blurring layer
+            # Choose the correct type of the blurring layer and ensure it is valid
             if blurring_type == "g":
                 blurring_type = "gaussian"
 
@@ -440,21 +447,25 @@ def build_preprocessing(inp_shape, name="preprocessing", instructions="I,G"):
                 continue
 
             # If kernel size is not specified, set it to default
-            kernel_size = re.search(r"-k(\d*)", layer).group(1)
-            if not kernel_size:
+            match = re.search(r"-k(\d*)", layer)
+            if not match:
                 kernel_size = 3
                 wrn = "\nThe kernel_size for the blurring layer is not specified.\n"
                 wrn += f"Setting the kernel_size to default ({kernel_size}) and continuing the process.\n"
                 warnings.warn(wrn)
+            else:
+                kernel_size = match.group(1)
 
             # If sigma is not specified, set it to default (only relevant for gaussian blur)
-            sigma = re.search(r"s([\d\.]*)", layer).group(1)
-            if not sigma:
+            match = re.search(r"s([\d\.]*)", layer)
+            if not match:
                 sigma = 1
                 if blurring_type == "gaussian":
                     wrn = "\nThe sigma parameter for the gaussian blurring layer is not specified.\n"
                     wrn += f"Setting the sigma parameter to default ({sigma}) and continuing the process.\n"
                     warnings.warn(wrn)
+            else:
+                sigma = match.group(1)
 
             preprocessing = Blurring(blurring_type=blurring_type,
                                      kernel_size=int(kernel_size),
@@ -472,14 +483,15 @@ def build_preprocessing(inp_shape, name="preprocessing", instructions="I,G"):
                 continue
 
             # Ensure the type of the thresholding layer is specified
-            thresholding_type = re.search(r"-t(\w)", layer).group(1)
-            if not thresholding_type:
+            match = re.search(r"-t(\w)", layer)
+            if not match:
                 wrn = "\nThe type for the thresholding layer is not specified.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
                 warnings.warn(wrn)
                 continue
+            thresholding_type = match.group(1)
 
-            # Choose the correct type of the thresholding layer
+            # Choose the correct type of the thresholding layer and ensure it is valid
             if thresholding_type == "g":
                 thresholding_type = "gaussian"
 
@@ -493,20 +505,24 @@ def build_preprocessing(inp_shape, name="preprocessing", instructions="I,G"):
                 continue
 
             # If block size is not specified, set it to default
-            block_size = re.search(r"-b(\d*)", layer).group(1)
-            if not block_size:
+            match = re.search(r"-b(\d*)", layer)
+            if not match:
                 block_size = 3
                 wrn = "\nThe kernel_size for the blurring layer is not specified.\n"
                 wrn += f"Setting the kernel_size to default ({kernel_size}) and continuing the process.\n"
                 warnings.warn(wrn)
+            else:
+                block_size = match.group(1)
 
             # If constant is not specified, set it to default
-            constant = re.search(r"c([\d\.]*)", layer).group(1)
-            if not constant:
+            match = re.search(r"c\((-?\d+)\)", layer)
+            if not match:
                 constant = 0
                 wrn = "\nThe constant for the adaptive thresholding layer is not specified.\n"
                 wrn += f"Setting the constant to default ({constant}) and continuing the process.\n"
                 warnings.warn(wrn)
+            else:
+                constant = match.group(1)
 
             preprocessing = AdaptiveThresholding(thresholding_type=thresholding_type,
                                                  block_size=int(block_size),
