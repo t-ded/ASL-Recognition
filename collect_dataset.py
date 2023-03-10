@@ -211,7 +211,7 @@ def collect_data(gesture_list, examples="Examples", data_directory="Data",
 
                 # To reduce the number of almost identical frames, only save every n frames
                 # To give space for adjustments and "learning" a new sign, only start collecting after some time
-                if not current % 10 and current - current_amounts[gesture] > 80:
+                if not current % 6 and current - current_amounts[gesture] > 80:
 
                     # Create the naming for the file with the desired padding, i.e. ("gesture_run-number.jpg")
                     img_name = gesture + "_" + str(counter) + ".jpg"
