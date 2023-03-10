@@ -2,7 +2,6 @@
 # disable=C0301, C0103, E1101
 # TODO: Adjust README.md file
 # TODO: Adjust the docstring for this run function
-# TODO: Fill in the docstrings for classes and their methods in preprocessing.py file
 """
 A simple function to enable running
 the different scripts from command line.
@@ -36,8 +35,7 @@ from model.model import build_model, build_preprocessing
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--config_dir", default="", type=str, help="Directory with the config.json file")
-parser.add_argument("--experiment", default=None, type=int,
-                    help="Number of this experiment (the settings will be saved in the respective newly created folder or loaded from an existing folder)")
+
 
 # Specify procedure
 procedure = parser.add_mutually_exclusive_group()
@@ -47,13 +45,20 @@ procedure.add_argument("-tr", "--train", action="store_true", help="If given, ru
 procedure.add_argument("-show", "--showcase", action="store_true", help="If given, run the showcasing process")
 procedure.add_argument("-pred", "--predict", action="store_true", help="If given, run the showcasing process with model prediction")
 
+# Specify training settings
+train_settings = parser.add_argument_group("Training settings")
+train_settings.add_argument("--experiment", default=None, type=int,
+                            help="Number of this experiment (the settings will be saved in the respective newly created folder or loaded from an existing folder)")
+train_settings.add_argument("-tb", "--tensorboard", action="store_true", help="If given, set up TensorBoard callback for model training")
+train_settings.add_argument("-des", "--disable_early_stopping", action="store_false", help="If given, do not set up EarlyStopping callback for model training")
+
 # Specify the hyperparameters if the json file was not given
 hyperparameters = parser.add_argument_group("Hyperparameters")
-hyperparameters.add_argument("--batch_size", default=64, type=int, help="Batch size")
-hyperparameters.add_argument("--epochs", default=10, type=int, help="Number of epochs")
-hyperparameters.add_argument("--optimizer", default="adam", choices=["adam", "SGD"], help="Optimizer for training")
-hyperparameters.add_argument("--learning_rate", default=0.01, type=float, help="Starting learning rate")
-hyperparameters.add_argument("--regularization", default=None, choices=["l1", "l2"], help="Regularization for the loss function")
+hyperparameters.add_argument("-bs", "--batch_size", default=64, type=int, help="Batch size")
+hyperparameters.add_argument("-e", "--epochs", default=10, type=int, help="Number of epochs")
+hyperparameters.add_argument("-opt", "--optimizer", default="adam", choices=["adam", "SGD"], help="Optimizer for training")
+hyperparameters.add_argument("-lr", "--learning_rate", default=0.01, type=float, help="Starting learning rate")
+hyperparameters.add_argument("-reg", "--regularization", default=None, choices=["l1", "l2"], help="Regularization for the loss function")
 hyperparameters.add_argument("--seed", default=123, type=int, help="Random seed for operations including randomness (e.g. shuffling)")
 hyperparameters.add_argument("--split", default=0.2, type=float, help="Portion of the full dataset to reserve for validation")
 
@@ -209,13 +214,28 @@ def main(args):
         tb_path = os.path.join(config["Paths"]["Logs"],
                                "{}".format(datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")))
 
-        # Create callback for the model to save progress during training
+        # Create callbacks for the model to save progress during training
+        # Checkpoint callback
         cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=cp_path,
                                                          verbose=1,
                                                          save_weights_only=True,
-                                                         save_freq=2 * args.batch_size)
-        tb_callback = tf.keras.callbacks.TensorBoard(log_dir=tb_path,
-                                                     histogram_freq=1)
+                                                         save_freq="epoch")
+        callbacks = [cp_callback]
+
+        # TensorBoard callback (optional, default is to not include)
+        if args.tensorboard:
+            tb_callback = tf.keras.callbacks.TensorBoard(log_dir=tb_path,
+                                                         histogram_freq=1)
+            callbacks.append(tb_callback)
+
+        # Early stopping callback (optional, default is to include)
+        if not args.disable_early_stopping:
+            es_callback = tf.keras.callbacks.EarlyStopping(monitor="val_accuracy",
+                                                           min_delta=0.01,
+                                                           patience=2,
+                                                           verbose=1,
+                                                           mode="auto")
+            callbacks.append(es_callback)
 
         # Set the default preprocessing pipeline if not specified
         if args.preprocessing_layers is None:
@@ -274,7 +294,7 @@ def main(args):
         # Train the model according to the given instructions
         model.fit(train_images, validation_data=(test_images),
                   epochs=args.epochs,
-                  callbacks=[cp_callback, tb_callback])
+                  callbacks=callbacks)
 
         # Save the model into the appropriate folder
         model.save(filepath=save_dir,
