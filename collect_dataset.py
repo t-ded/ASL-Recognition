@@ -118,11 +118,11 @@ def collect_data(gesture_list, examples="Examples", data_directory="Data",
         # Establish the windows and place them accordingly
         cv2.namedWindow("Camera view")
         cv2.resizeWindow("Camera view", 1080, 720)
-        cv2.moveWindow("Camera view", 15, 200)
+        cv2.moveWindow("Camera view", 100, 150)
 
         cv2.namedWindow("Example")
-        cv2.resizeWindow("Example", 640, 480)
-        cv2.moveWindow("Example", 1125, 200)
+        cv2.resizeWindow("Example", 480, 360)
+        cv2.moveWindow("Example", 750, 230)
 
         lang = True  # To let the user change language, True stands for English, False for Czech
         rectangle_position = 0  # Which position of the rectangle to use

@@ -54,7 +54,6 @@ hyperparameters.add_argument("--epochs", default=10, type=int, help="Number of e
 hyperparameters.add_argument("--optimizer", default="adam", choices=["adam", "SGD"], help="Optimizer for training")
 hyperparameters.add_argument("--learning_rate", default=0.01, type=float, help="Starting learning rate")
 hyperparameters.add_argument("--regularization", default=None, choices=["l1", "l2"], help="Regularization for the loss function")
-hyperparameters.add_argument("--dropout", default=0.5, type=float, help="Dropout rate for the dropout layers")
 hyperparameters.add_argument("--seed", default=123, type=int, help="Random seed for operations including randomness (e.g. shuffling)")
 hyperparameters.add_argument("--split", default=0.2, type=float, help="Portion of the full dataset to reserve for validation")
 
