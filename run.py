@@ -3,9 +3,6 @@
 # TODO: Adjust README.md file
 # TODO: Adjust the docstring for this run function
 # TODO: Fill in the docstrings for classes and their methods in preprocessing.py file
-
-# TODO: Add blank line function to utils.py (does not have to take any argument, just print \n\n\n ---------- \n\n\n)
-# and then use this to logically divide terminal outputs for this function
 """
 A simple function to enable running
 the different scripts from command line.
@@ -72,6 +69,9 @@ architecture.add_argument("-prep_layers", "--preprocessing_layers", default=None
 def main(args):
     """Command line function"""
 
+    # Optically indent the beginning of the process
+    utils.indent()
+
     # Load configuration file from json in the given folder
     with open(args.config_dir + "config.json", "r") as config_file:
         config = json.load(config_file)
@@ -94,7 +94,7 @@ def main(args):
     current_dir = os.path.join(model_dir, "current")
     img_size = config["General parameters"]["Image size"]
     print("The folders have been set up.")
-    print("\n\n ------------------------------------------------ \n\n")
+    utils.indent()
 
     # Collection of the data
     if args.collect:
@@ -123,10 +123,15 @@ def main(args):
 
     # Showcase various preprocessing pipelines and enable saving their outputs
     elif args.preprocess:
+
+        print("Starting to showcase different preprocessing pipelines")
+
         showcase_preprocessing()
 
     # Build a new model and train it on the given data
     elif args.train:
+
+        print("Starting the model training process")
 
         # Set threading options to autotuning
         tf.config.threading.set_inter_op_parallelism_threads(0)
@@ -180,6 +185,9 @@ def main(args):
             # Save the model in the respective experiment folder
             utils.new_folder(experiment_dir)
             save_dir = experiment_dir
+
+        # Optically indent the preparation from actual model building
+        utils.indent()
 
         # Loading the training and testing datasets from directories and optimizing them for performance
         train_images, test_images = tf.keras.preprocessing.image_dataset_from_directory(data_dir,
@@ -247,10 +255,18 @@ def main(args):
                       loss=tf.keras.losses.CategoricalCrossentropy(),
                       metrics=[tf.keras.metrics.CategoricalAccuracy(name="accuracy")])
 
-        # Show model summary
-        print("\n\n ------------------------------------------------ \n\n")
-        print("Model has been built, showing model summary now.")
+        # Show summaries for all the models
+        utils.indent(n=2)
+        print("Models have been built, showing model summaries now.\n")
+        print("Preprocessing pipeline:")
+        print(preprocessing.summary())
+        utils.indent(n=1)
+        print("Trainable layers of the model:")
+        print(trainable.summary())
+        utils.indent(n=1)
+        print("Fully compiled model:")
         print(model.summary())
+        utils.indent(n=2)
 
         # Save the initial weights as specified in the "checkpoint_path" format
         model.save_weights(cp_path.format(epoch=0))
@@ -267,6 +283,8 @@ def main(args):
     # Demonstrate the image taking process
     elif args.showcase:
 
+        print("Starting environment showcasing process")
+
         showcase_model(gestures, examples=example_dir,
                        predict=False, model=None,
                        translations=config["Paths"]["Translations"],
@@ -274,6 +292,8 @@ def main(args):
 
     # Demonstrate the image taking process while also demonstrating the model and its predictions
     elif args.predict:
+
+        print("Starting model demonstration process")
 
         try:
             model = tf.keras.models.load_model(filepath=config["Model"]["Current model"],
