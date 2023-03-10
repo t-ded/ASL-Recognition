@@ -27,6 +27,7 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
         Esc - terminate the whole process
         q - skip the current gesture and move to the next one
         l - switch language from English to Czech and vice versa
+        p - pause the process
         spacebar - move the rectangle into the other position (one should be more comfortable for fingerspelling)
 
     Parameters:
@@ -120,6 +121,7 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
 
         lang = True  # To let the user change language, True stands for English, False for Czech
         rectangle_position = 0  # Which position of the rectangle to use
+        pause_flag = False  # Enable the user to pause the process
 
         # Perform the data collecting process for each gesture in the given gesture list
         for gesture in gesture_list:
@@ -152,6 +154,10 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
                 if key == ord("l"):
                     lang = not lang
 
+                # Pause the process if the "p" key is hit
+                if key == ord("p"):
+                    pause_flag = not pause_flag
+
                 # Change the rectangle position if the "spacebar" key is hit
                 if key == ord(" "):
                     rectangle_position += 1
@@ -161,12 +167,17 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
                 frame_cut = frame[(rect[0][1] + 2):(rect[2][1] - 2),
                                   (rect[0][0] + 2):(rect[1][0] - 2)]
 
-                # Show all images
+                # Adjust the color of the text and frame based on the current state
+                # Green - running model prediction, Orange - model prediction is paused
+                if pause_flag:
+                    color = (0, 128, 255)
+                else:
+                    color = (0, 255, 0)
 
-                # Live view with frame and text
-                cv2.rectangle(frame, rect[0], rect[3], (0, 255, 0), 2)
+                # Live view with frame and text (colorcoded as specified above)
+                cv2.rectangle(frame, rect[0], rect[3], color, 2)
                 # Add information about prediction if expected, otherwise just show the name of the gesture
-                if predict:
+                if predict and not pause_flag:
                     prediction = model(frame_cut[None, :],
                                        training=False).numpy()
                     probability = prediction.max(axis=-1).round(2)
@@ -179,7 +190,7 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
                     if not lang:
                         txt = dictionary[txt]
                 cv2.putText(frame, txt, (rect[0][0], rect[0][1] - 15),
-                            cv2.FONT_HERSHEY_DUPLEX, 1, (0, 255, 0), 2)
+                            cv2.FONT_HERSHEY_DUPLEX, 1, color, 2)
                 cv2.imshow("Camera view", frame)
 
                 # Show example on new gesture

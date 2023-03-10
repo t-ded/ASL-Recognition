@@ -24,6 +24,7 @@ def collect_data(gesture_list, examples="Examples", data_directory="Data",
         Esc - terminate the whole process
         q - skip the current gesture and move to the next one
         l - switch language from English to Czech and vice versa
+        p - pause the process
         spacebar - move the rectangle into the other position (one should be more comfortable for fingerspelling)
 
     Parameters:
@@ -125,6 +126,7 @@ def collect_data(gesture_list, examples="Examples", data_directory="Data",
 
         lang = True  # To let the user change language, True stands for English, False for Czech
         rectangle_position = 0  # Which position of the rectangle to use
+        pause_flag = False  # Enable the user to pause the process
 
         # Perform the data collecting process for each gesture in the given gesture list
         for gesture in gesture_list:
@@ -162,25 +164,31 @@ def collect_data(gesture_list, examples="Examples", data_directory="Data",
                 if key == ord("l"):
                     lang = not lang
 
+                # Pause the process if the "p" key is hit
+                if key == ord("p"):
+                    pause_flag = not pause_flag
+
                 # Change the rectangle position if the "spacebar" key is hit
                 if key == ord(" "):
                     rectangle_position += 1
                     rect = [rect_torso, rect_fingerspell_1, rect_fingerspell_2][rectangle_position % 3]
 
-                # Live view with frame and text (colorcoded to indicate whether images are being saved)
-                if current - current_amounts[gesture] > 75:
-                    cv2.rectangle(frame, rect[0], rect[3], (0, 255, 0), 2)
+                # Adjust the color of the text and frame based on the current state
+                # Green - saving images, Orange - image saving is paused, Red - not saving images
+                if pause_flag:
+                    color = (0, 128, 255)
+                elif current - current_amounts[gesture] <= 75:
+                    color = (0, 0, 255)
                 else:
-                    cv2.rectangle(frame, rect[0], rect[3], (0, 0, 255), 2)
+                    color = (0, 255, 0)
+
+                # Live view with frame and text (colorcoded as specified above)
+                cv2.rectangle(frame, rect[0], rect[3], color, 2)
                 txt = gesture.capitalize()
                 if not lang:
                     txt = dictionary[txt]
-                if current - current_amounts[gesture] > 75:
-                    cv2.putText(frame, txt, (rect[0][0], rect[0][1] - 15),
-                                cv2.FONT_HERSHEY_DUPLEX, 1, (0, 255, 0), 2)
-                else:
-                    cv2.putText(frame, txt, (rect[0][0], rect[0][1] - 15),
-                                cv2.FONT_HERSHEY_DUPLEX, 1, (0, 0, 255), 2)
+                cv2.putText(frame, txt, (rect[0][0], rect[0][1] - 15),
+                            cv2.FONT_HERSHEY_DUPLEX, 1, color, 2)
                 cv2.imshow("Camera view", frame)
 
                 # Show example on new gesture
@@ -196,6 +204,10 @@ def collect_data(gesture_list, examples="Examples", data_directory="Data",
                     cv2.imshow("BigExample", cv2.resize(example, (1280, 720)))
                     cv2.waitKey(2000)
                     cv2.destroyWindow("BigExample")
+
+                # Halt the process until the "p" key is hit again
+                if pause_flag:
+                    continue
 
                 # To reduce the number of almost identical frames, only save every n frames
                 # To give space for adjustments and "learning" a new sign, only start collecting after some time
