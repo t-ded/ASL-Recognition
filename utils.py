@@ -11,9 +11,6 @@ import re
 import warnings
 import cv2
 import numpy as np
-from tensorflow.keras import layers
-from keras_cv.layers import Grayscale
-from model.preprocessing import AdaptiveThresholding, Blurring
 
 
 def new_folder(dir_name, verbose=False):
@@ -263,11 +260,13 @@ def get_dictionary(translations):
     Returns:
         dictionary: dict of gesture_English: gesture_Czech pairs
     """
+    # Input management
     if not isinstance(translations, str):
         raise ValueError("Different datatype than string has been given for the name of the folder with translations.")
     if not os.path.exists(translations):
         raise ValueError("The given directory for the translations does not exist, please specify a correct directory path.")
 
+    # Load the translations from the given file
     dictionary = {}
     with open(translations, "r") as pairs:
         for pair in pairs:
@@ -276,3 +275,22 @@ def get_dictionary(translations):
             dictionary[english] = czech
 
     return dictionary
+
+
+def indent(n=3):
+    """
+    Function to print n blank lines followed by a set of "-" and n blank lines.
+    The purpose is to optically divide logically distinct blocks of terminal output.
+
+    Parameters:
+        n: int
+            Number of bllank lines to print before and after the set of "-"
+    """
+    # Input management
+    if not isinstance(n, int):
+        raise ValueError("Different datatype than integer has been given for the number of lines to pad using indent function.")
+    if n < 0:
+        raise ValueError("Negative number has been given as the number of lines to pad using indent function.")
+
+    # Perform padding
+    print("\n" * n + "-" * 15 + "\n" * n)
