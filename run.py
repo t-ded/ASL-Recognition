@@ -266,6 +266,7 @@ def main(args):
         print("Fully compiled model:")
         print(model.summary())
         utils.indent(n=2)
+        print("Model training:")
 
         # Save the initial weights as specified in the "checkpoint_path" format
         model.save_weights(cp_path.format(epoch=0))

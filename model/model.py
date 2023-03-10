@@ -168,12 +168,14 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
             if flatten_flag:
                 hidden = tf.keras.layers.Conv1D(filters=int(filters),
                                                 kernel_size=int(kernel_size),
-                                                strides=int(strides))(hidden)
+                                                strides=int(strides),
+                                                activation=tf.nn.relu)(hidden)
                 flatten_flag = 1
             else:
                 hidden = tf.keras.layers.Conv2D(filters=int(filters),
                                                 kernel_size=int(kernel_size),
-                                                strides=int(strides))(hidden)
+                                                strides=int(strides),
+                                                activation=tf.nn.relu)(hidden)
 
         # Pooling layer
         elif layer_name == "P":
@@ -274,7 +276,8 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
                 hidden = tf.keras.layers.Flatten()(hidden)
                 flatten_flag = 1
 
-            hidden = tf.keras.layers.Dense(int(match.group(1)))(hidden)
+            hidden = tf.keras.layers.Dense(int(match.group(1)),
+                                           activation=tf.nn.relu)(hidden)
 
         # Flatten layer
         elif layer_name == "F":
