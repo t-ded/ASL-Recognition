@@ -269,8 +269,11 @@ def main(args):
                                name="full_model")
 
         # Compile the modile according to given instructions
-        # TODO (optional): Include adjustment of learning rate
-        model.compile(optimizer=args.optimizer,
+        if args.optimizer == "adam":
+            optimizer = tf.keras.optimizers.Adam(learning_rate=args.learning_rate)
+        elif args.optimizer == "SGD":
+            optimizer = tf.keras.optimizers.experimental.SGD(learning_rate=args.learning_rate)
+        model.compile(optimizer=optimizer,
                       loss=tf.keras.losses.CategoricalCrossentropy(),
                       metrics=[tf.keras.metrics.CategoricalAccuracy(name="accuracy")])
 

@@ -194,7 +194,7 @@ def collect_data(gesture_list, examples="Examples", data_directory="Data",
                 # Show example on new gesture
                 if not flag:
                     example = cv2.imread(f"{os.path.join(examples, gesture)}" + ".jpg")
-                    cv2.imshow("Example", cv2.resize(example, (640, 480)))
+                    cv2.imshow("Example", cv2.resize(example, (480, 360)))
                     flag = 1
 
                     # Show big example to warn about new gesture and enable readjustment
@@ -202,7 +202,7 @@ def collect_data(gesture_list, examples="Examples", data_directory="Data",
                     cv2.resizeWindow("BigExample", 1280, 720)
                     cv2.moveWindow("BigExample", 125, 50)
                     cv2.imshow("BigExample", cv2.resize(example, (1280, 720)))
-                    cv2.waitKey(2000)
+                    cv2.waitKey(2500)
                     cv2.destroyWindow("BigExample")
 
                 # Halt the process until the "p" key is hit again
