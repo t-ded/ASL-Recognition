@@ -43,6 +43,7 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
         img_size: int (default 196)
             Size of images for prediction.
     """
+
     # Input management
     if not isinstance(gesture_list, list):
         raise ValueError("Different datatype than list has been given as input for the list of gestures.")

@@ -23,6 +23,7 @@ def new_folder(dir_name, verbose=False):
         verbose: bool (default False)
             Whether or not to inform the user about the creation of the folder.
     """
+
     # Input management
     if not isinstance(dir_name, str):
         raise ValueError("Different datatype than string has been given as input for name of the directory.")
@@ -54,6 +55,7 @@ def repair_padding(dir_name):
         dir_name: str
             Path to the directory that needs repair.
     """
+
     # Input management
     if not isinstance(dir_name, str):
         raise ValueError("Different datatype than string has been given as input for name of the directory.")
@@ -143,6 +145,7 @@ def setup_folders(script_directory, gestures_list, amount_per_gesture):
         paths: dict of str: str
             Dictionary of paths to all the gestures.
     """
+
     # Input management
     if not isinstance(script_directory, str):
         raise ValueError("Different datatype than string has been given as input for name of the script directory.")
@@ -229,6 +232,7 @@ def create_rectangle(origin, size_x, size_y):
         rectangle: list of 4 tuples of (int, int)
             The coordinates for the upper left, upper right, lower left and lower right corner
     """
+
     if not isinstance(origin, tuple):
         raise ValueError("Different datatype than tuple has been given as input for the origin.")
     if len(origin) != 2:
@@ -260,6 +264,7 @@ def get_dictionary(translations):
     Returns:
         dictionary: dict of gesture_English: gesture_Czech pairs
     """
+
     # Input management
     if not isinstance(translations, str):
         raise ValueError("Different datatype than string has been given for the name of the folder with translations.")
@@ -286,6 +291,7 @@ def indent(n=3):
         n: int
             Number of bllank lines to print before and after the set of "-"
     """
+
     # Input management
     if not isinstance(n, int):
         raise ValueError("Different datatype than integer has been given for the number of lines to pad using indent function.")

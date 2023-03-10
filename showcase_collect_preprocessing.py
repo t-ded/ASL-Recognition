@@ -24,6 +24,7 @@ def showcase_preprocessing():
         Esc - terminate the whole process
         spacebar - move the rectangle into the other position (one should be more comfortable for fingerspelling)
     """
+
     # The rectangle in the frame that is cropped from the web camera image
     # (one for torso location, one for fingerspelling location)
     rect_torso = create_rectangle((225, 275), 200, 200)

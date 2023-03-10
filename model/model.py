@@ -63,6 +63,7 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
         model: tf.keras.Model
             Instance of an uncompiled keras model (functional).
     """
+
     # Input management
     if not isinstance(inp_shape, list):
         raise ValueError("Different datatype than list has been given as input for the parameter inp_shape.")
@@ -352,6 +353,7 @@ def build_preprocessing(inp_shape, name="preprocessing", instructions="I,G"):
         model: tf.keras.Model
             Instance of an uncompiled keras model (functional) without trainable layers.
     """
+
     # Input management
     if not isinstance(inp_shape, list):
         raise ValueError("Different datatype than list has been given as input for the parameter inp_shape.")

@@ -67,7 +67,7 @@ architecture.add_argument("-prep_layers", "--preprocessing_layers", default=None
 
 
 def main(args):
-    """Command line function"""
+    """Command line run function"""
 
     # Optically indent the beginning of the process
     utils.indent()
@@ -250,7 +250,7 @@ def main(args):
                                name="full_model")
 
         # Compile the modile according to given instructions
-        # TODO: Include optimizer selection + adjustment of learning rate
+        # TODO (optional): Include adjustment of learning rate
         model.compile(optimizer=args.optimizer,
                       loss=tf.keras.losses.CategoricalCrossentropy(),
                       metrics=[tf.keras.metrics.CategoricalAccuracy(name="accuracy")])
