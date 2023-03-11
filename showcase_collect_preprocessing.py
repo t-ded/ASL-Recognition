@@ -10,12 +10,12 @@ and then possibly saves these into given folders for comparison.
 
 import os
 import cv2
+from tensorflow import expand_dims, convert_to_tensor, uint8
 from utils import create_rectangle, new_folder
-from tensorflow.keras import layers, Sequential
-from model.preprocessing import AdaptiveThresholding, Blurring, Grayscale
+from model.model import build_preprocessing
 
 
-def showcase_preprocessing():
+def showcase_preprocessing(inp_shape):
     """
     Function for image capturing and showcasing & saving various preprocessing
     pipelines for comparison.
@@ -23,6 +23,11 @@ def showcase_preprocessing():
     Throughout the run of the function, you can use the following commands by using keys on your keyboard:
         Esc - terminate the whole process
         spacebar - move the rectangle into the other position (one should be more comfortable for fingerspelling)
+        q - save the current frames for all the pipelines as well as their summaries into a seaprate txt file
+
+    Parameters:
+        inp_shape: list of ints
+            Dimensions of the input (excluding the size of the batch).
     """
 
     # The rectangle in the frame that is cropped from the web camera image
@@ -48,59 +53,31 @@ def showcase_preprocessing():
             cv2.moveWindow(f"Preprocessing pipeline {i + 1}", 655 + 325 * (i % 2), 16 + 270 * (i // 2))
 
         # Setting up preprocessing sequential pipelines
-        pipeline1 = Sequential(
-            [
-                Grayscale(),
-                Blurring(blurring_type="median", kernel_size=3, sigma=None),
-                AdaptiveThresholding(thresholding_type="mean", block_size=3, constant=-3),
-                layers.Rescaling(scale=(1. / 255))
-            ]
-        )
+        pipeline1 = build_preprocessing(inp_shape=inp_shape,
+                                        instructions="I,G,B-tm-k3,T-tm-b3-c(2)",
+                                        name="Preprocessing_pipeline_1")
 
-        pipeline2 = Sequential(
-            [
-                Grayscale(),
-                Blurring(blurring_type="median", kernel_size=5, sigma=None),
-                AdaptiveThresholding(thresholding_type="mean", block_size=3, constant=-3),
-                layers.Rescaling(scale=(1. / 255))
-            ]
-        )
+        pipeline2 = build_preprocessing(inp_shape=inp_shape,
+                                        instructions="I,G,B-tm-k3,T-tm-b3-c(-3)",
+                                        name="Preprocessing_pipeline_2")
 
-        pipeline3 = Sequential(
-            [
-                Grayscale(),
-                Blurring(blurring_type="median", kernel_size=3, sigma=None),
-                AdaptiveThresholding(thresholding_type="mean", block_size=5, constant=1),
-                layers.Rescaling(scale=(1. / 255))
-            ]
-        )
+        pipeline3 = build_preprocessing(inp_shape=inp_shape,
+                                        instructions="I,G,B-tm-k3,T-tm-b3-c(-2)",
+                                        name="Preprocessing_pipeline_3")
 
-        pipeline4 = Sequential(
-            [
-                Grayscale(),
-                Blurring(blurring_type="median", kernel_size=5, sigma=None),
-                AdaptiveThresholding(thresholding_type="mean", block_size=5, constant=1),
-                layers.Rescaling(scale=(1. / 255))
-            ]
-        )
+        pipeline4 = build_preprocessing(inp_shape=inp_shape,
+                                        instructions="I,G,B-tm-k3,T-tm-b3-c(-1)",
+                                        name="Preprocessing_pipeline_4")
 
-        pipeline5 = Sequential(
-            [
-                Grayscale(),
-                Blurring(blurring_type="gaussian", kernel_size=3, sigma=1),
-                AdaptiveThresholding(thresholding_type="mean", block_size=3, constant=5),
-                layers.Rescaling(scale=(1. / 255))
-            ]
-        )
+        pipeline5 = build_preprocessing(inp_shape=inp_shape,
+                                        instructions="I,G,B-tm-k3,T-tm-b3-c(0)",
+                                        name="Preprocessing_pipeline_5")
 
-        pipeline6 = Sequential(
-            [
-                Grayscale(),
-                Blurring(blurring_type="gaussian", kernel_size=5, sigma=3),
-                AdaptiveThresholding(thresholding_type="mean", block_size=3, constant=5),
-                layers.Rescaling(scale=(1. / 255))
-            ]
-        )
+        pipeline6 = build_preprocessing(inp_shape=inp_shape,
+                                        instructions="I,G,B-tm-k3,T-tm-b3-c(1)",
+                                        name="Preprocessing_pipeline_6")
+        pipelines_list = [pipeline1, pipeline2, pipeline3,
+                          pipeline4, pipeline5, pipeline6]
 
         rectangle_position = 0  # Which position of the rectangle to use
         save_counter = 0  # Count the number of times user has requested saving pipelines' results
@@ -128,24 +105,28 @@ def showcase_preprocessing():
             # Create rectangle cut
             frame_cut = frame[(rect[0][1] + 2):(rect[2][1] - 2),
                               (rect[0][0] + 2):(rect[1][0] - 2)]
+            frame_cut_tensor = expand_dims(convert_to_tensor(frame_cut,
+                                                             dtype=uint8),
+                                           axis=0)
 
             # Try different preprocessing pipelines
-            frame_binary_1 = pipeline1(frame_cut)
-            frame_binary_2 = pipeline2(frame_cut)
-            frame_binary_3 = pipeline3(frame_cut)
-            frame_binary_4 = pipeline4(frame_cut)
-            frame_binary_5 = pipeline5(frame_cut)
-            frame_binary_6 = pipeline6(frame_cut)
-            pipelines_list = [frame_binary_1, frame_binary_2, frame_binary_3,
-                              frame_binary_4, frame_binary_5, frame_binary_6]
+            frame_binary_1 = pipeline1(frame_cut_tensor)
+            frame_binary_2 = pipeline2(frame_cut_tensor)
+            frame_binary_3 = pipeline3(frame_cut_tensor)
+            frame_binary_4 = pipeline4(frame_cut_tensor)
+            frame_binary_5 = pipeline5(frame_cut_tensor)
+            frame_binary_6 = pipeline6(frame_cut_tensor)
+            results_list = [frame_binary_1, frame_binary_2, frame_binary_3,
+                            frame_binary_4, frame_binary_5, frame_binary_6]
 
             # Live view with frame
             cv2.rectangle(frame, rect[0], rect[3], (0, 255, 0), 2)
             cv2.imshow("Camera view", frame)
 
             # Show results for all pipelines
-            for i, pipeline in enumerate(pipelines_list):
-                cv2.imshow(f"Preprocessing pipeline {i + 1}", cv2.resize(pipeline.numpy(), (320, 240)))
+            for i, result in enumerate(results_list):
+                cv2.imshow(f"Preprocessing pipeline {i + 1}",
+                           cv2.resize(result.numpy()[0, :, :, :], (320, 240)))
 
             # Save the current layout in case the "q" key is hit
             if key == ord("q"):
@@ -156,22 +137,26 @@ def showcase_preprocessing():
 # TODO: Might eventually add repair padding function for folders (aaa_1) -> use that here on "data_pipelines"
                     current_name = f"data_pipelines/experiment_{len(os.listdir('data_pipelines')) + 1}"
                     new_folder(current_name)
-# TODO: Add saving information for this preprocessing run (e.g. json)
-# TODO: Implement this by adding a summary() method to the custom layers
+
+                    # Save pipeline architecture for each of them
+                    with open(current_name + "\\pipeline_summaries.txt", "a+") as file:
+                        for pipeline in pipelines_list:
+                            pipeline.summary(print_fn=lambda x: file.write(x + "\n"))
+                            file.write("\n" * 3)
 
                 # Set up the folder for a new save
                 save_name = current_name + f"/save_{save_counter + 1}"
                 new_folder(save_name)
 
                 # Create the naming for the files with the desired padding
-                for i, pipeline in enumerate(pipelines_list):
+                for i, result in enumerate(results_list):
                     img_name = "pipeline" + "_" + str(i + 1) + ".jpg"
                     img_path = r"%s" % os.path.join(save_name, img_name)
 
-                    # Save each pipeline's result and information
-                    if not cv2.imwrite(img_path, (pipeline.numpy() * 255)):
-                        print("Something went wrong during this attempt:",
-                              f"run - pipeline {i}")
+                    # Save each pipeline's result
+                    if not cv2.imwrite(img_path, result.numpy()[0, :, :, :]):
+                        print("Something went wrong during this save attempt:",
+                              f"run - pipeline {i + 1}")
 
                 save_counter += 1
 

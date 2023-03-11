@@ -130,7 +130,7 @@ def main(args):
 
         print("Starting to showcase different preprocessing pipelines")
 
-        showcase_preprocessing()
+        showcase_preprocessing(inp_shape=[img_size, img_size, 3])
 
     # Build a new model and train it on the given data
     elif args.train:
@@ -304,14 +304,16 @@ def main(args):
                    overwrite=True)
 
         # Save the model architecture in a text file as well for easy access
-        with open(save_dir + "model_summary.txt", "a+") as file:
+        with open(save_dir + "\\model_summary.txt", "a+") as file:
             file.write("Preprocessing pipeline:\n")
             preprocessing.summary(print_fn=lambda x: file.write(x + "\n"))
+            file.write("\n\n")
             file.write("Trainable summary:\n")
             trainable.summary(print_fn=lambda x: file.write(x + "\n"))
-            print("\nTraining parameters: ", history.params, "\n")
-            print("\nTraining accuracy: ", history["accuracy"])
-            print("Validation accuracy: ", history["val_accuracy"])
+            file.write("\n\n")
+            file.write("\nTraining parameters: " + history.params + "\n")
+            file.write("Final training accuracy: " + history.history["accuracy"][-1])
+            file.write("Final validation accuracy: " + history.history["val_accuracy"][-1])
 
     # Demonstrate the image taking process
     elif args.showcase:

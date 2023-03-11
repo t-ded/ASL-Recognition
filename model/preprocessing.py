@@ -97,6 +97,19 @@ class AdaptiveThresholding(tf.keras.layers.Layer):
                                                       Tout=tf.uint8),
                          input_batch)
 
+    def compute_output_shape(self, input_shape):
+        """
+        Compute the output shape of this layer based on the given input shape
+
+        Parameters:
+            input_shape: tuple or tf.TensorShape
+                Specification of the input shape for this layer
+        Returns:
+            tuple of 4 ints
+                Output shape (same as the input shape)
+        """
+        return tf.TensorShape([input_shape[0], input_shape[1], input_shape[2], input_shape[3]])
+
     def get_config(self):
         """
         Return configuration of the layer for the purpose of model saving
