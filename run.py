@@ -295,13 +295,23 @@ def main(args):
         model.save_weights(cp_path.format(epoch=0))
 
         # Train the model according to the given instructions
-        model.fit(train_images, validation_data=(test_images),
-                  epochs=args.epochs,
-                  callbacks=callbacks)
+        history = model.fit(train_images, validation_data=(test_images),
+                            epochs=args.epochs,
+                            callbacks=callbacks)
 
         # Save the model into the appropriate folder
         model.save(filepath=save_dir,
                    overwrite=True)
+
+        # Save the model architecture in a text file as well for easy access
+        with open(save_dir + "model_summary.txt", "a+") as file:
+            file.write("Preprocessing pipeline:\n")
+            preprocessing.summary(print_fn=lambda x: file.write(x + "\n"))
+            file.write("Trainable summary:\n")
+            trainable.summary(print_fn=lambda x: file.write(x + "\n"))
+            print("\nTraining parameters: ", history.params, "\n")
+            print("\nTraining accuracy: ", history["accuracy"])
+            print("Validation accuracy: ", history["val_accuracy"])
 
     # Demonstrate the image taking process
     elif args.showcase:
