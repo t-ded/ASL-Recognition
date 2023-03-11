@@ -10,6 +10,7 @@ Turns on the camera and guides the user through the data collection process.
 import os
 import re
 import cv2
+from timeit import default_timer
 from utils import create_rectangle, get_dictionary
 
 
@@ -127,9 +128,10 @@ def collect_data(gesture_list, examples="Examples", data_directory="Data",
         lang = True  # To let the user change language, True stands for English, False for Czech
         rectangle_position = 0  # Which position of the rectangle to use
         pause_flag = False  # Enable the user to pause the process
+        num_gestures = len(gesture_list)  # To display the progress
 
         # Perform the data collecting process for each gesture in the given gesture list
-        for gesture in gesture_list:
+        for ind, gesture in enumerate(gesture_list):
 
             # Initialize necessary variables (different per gesture)
             current = current_amounts[gesture] + 1
@@ -138,6 +140,8 @@ def collect_data(gesture_list, examples="Examples", data_directory="Data",
 
             flag = 0  # To know when a new gesture is being taken for the first time
             exit_flag = 0  # To let the user end the process early by clicking the "Esc" key
+            eta = "N/A"  # To display the estimated time before the next gesture
+            eta_flag = True  # Flag to enable estimation of duration per saved image
 
             # Continue until the respective subfolder has the designated number of samples
             while counter <= end:
@@ -189,6 +193,13 @@ def collect_data(gesture_list, examples="Examples", data_directory="Data",
                     txt = dictionary[txt]
                 cv2.putText(frame, txt, (rect[0][0], rect[0][1] - 15),
                             cv2.FONT_HERSHEY_DUPLEX, 1, color, 2)
+
+                # Display the gesture progress as well as estimation until the next gesture
+                cv2.putText(frame, f"{str(ind + 1)}/{str(num_gestures)}", (5, 435),
+                            cv2.FONT_HERSHEY_DUPLEX, 0.8, color, 2)
+                cv2.putText(frame, "ETA: " + eta, (5, 470),
+                            cv2.FONT_HERSHEY_DUPLEX, 0.8, color, 2)
+
                 cv2.imshow("Camera view", frame)
 
                 # Show example on new gesture
@@ -207,11 +218,20 @@ def collect_data(gesture_list, examples="Examples", data_directory="Data",
 
                 # Halt the process until the "p" key is hit again
                 if pause_flag:
+                    eta_flag = True
                     continue
 
                 # To reduce the number of almost identical frames, only save every n frames
                 # To give space for adjustments and "learning" a new sign, only start collecting after some time
                 if not current % 6 and current - current_amounts[gesture] > 80:
+
+                    # Estimate the time from the last saved image
+                    if eta_flag:
+                        eta_flag = not eta_flag
+                        start = default_timer()
+                    else:
+                        eta_flag = not eta_flag
+                        eta = str(round((default_timer() - start) * (end - counter), 1)) + " s"
 
                     # Create the naming for the file with the desired padding, i.e. ("gesture_run-number.jpg")
                     img_name = gesture + "_" + str(counter) + ".jpg"
