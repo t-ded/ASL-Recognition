@@ -6,18 +6,32 @@
 A simple function to enable running
 the different scripts from command line.
 
-Parameters:
+Mutually exclusive process specification parameters:
 
-    collect: string
+    -col (--collect)
         Start the process of data collection.
-    train: string
-        Train the convolutional neural network.
-    showcase: string
-        Starts the camera and showcases the model prediction using pretrained model.
+        Image size is specified in config.json file.
+        Primarily uses the collect_dataset.py script.
+    -prep (--preprocess)
+        Start the demonstration for 6 different preprocessing pipelines.
+        The pipelines are specified in showcase_collect_preprocessing.py.
+    -tr (--train)
+        Build a model based on given architecture, train the model and save it.
+        The architecture and hyperparameters are either specified
+        in the command line with this parameter or set to default and given
+        by the config.json file.
+        Primarily uses the model.py script.
+    -show (--showcase)
+        Demonstrate the script environment.
+        This is the default procedure if none of procedure options is given.
+        Primarily uses the showcase_model.py script.
+    -pred (--predict)
+        Start the camera and showcases the model prediction using pretrained model.
+        The model is expected in the model/current directory.
+        Primarily uses the showcase_model.py script.
 
-Default procedure (when no parameters given) is trying to run the whole process
-    That is folders setup, data collection (default amount 500),
-    CNN build (default 2 layers) and train and then model showcasing
+Training parameters:
+    TODO
 """
 
 import argparse
@@ -26,6 +40,7 @@ import re
 import datetime
 import json
 import tensorflow as tf
+import tensorflow_addons as tfa
 import utils
 from collect_dataset import collect_data
 from showcase_collect_preprocessing import showcase_preprocessing
@@ -35,7 +50,6 @@ from model.model import build_model, build_preprocessing
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--config_dir", default="", type=str, help="Directory with the config.json file")
-
 
 # Specify procedure
 procedure = parser.add_mutually_exclusive_group()
@@ -230,7 +244,7 @@ def main(args):
 
         # Early stopping callback (optional, default is to include)
         if not args.disable_early_stopping:
-            es_callback = tf.keras.callbacks.EarlyStopping(monitor="val_accuracy",
+            es_callback = tf.keras.callbacks.EarlyStopping(monitor="val_f1_score",
                                                            min_delta=0.01,
                                                            patience=2,
                                                            verbose=1,
@@ -275,7 +289,10 @@ def main(args):
             optimizer = tf.keras.optimizers.experimental.SGD(learning_rate=args.learning_rate)
         model.compile(optimizer=optimizer,
                       loss=tf.keras.losses.CategoricalCrossentropy(),
-                      metrics=[tf.keras.metrics.CategoricalAccuracy(name="accuracy")])
+                      metrics=[tf.keras.metrics.CategoricalAccuracy(name="accuracy"),
+                               tf.keras.metrics.Recall(name="recall"),
+                               tf.keras.metrics.Precision(name="precision"),
+                               tfa.metrics.F1Score(len(gestures), name="f1_score")])
 
         # Show summaries for all the models
         utils.indent(n=2)
@@ -311,9 +328,15 @@ def main(args):
             file.write("Trainable summary:\n")
             trainable.summary(print_fn=lambda x: file.write(x + "\n"))
             file.write("\n\n")
-            file.write("\nTraining parameters: " + history.params + "\n")
-            file.write("Final training accuracy: " + history.history["accuracy"][-1])
-            file.write("Final validation accuracy: " + history.history["val_accuracy"][-1])
+            file.write("\nTraining parameters: " + str(history.params) + "\n")
+            file.write("Final training accuracy: " + str(history.history["accuracy"][-1]) + "\n")
+            file.write("Final validation accuracy: " + str(history.history["val_accuracy"][-1]) + "\n")
+            file.write("Final training precision: " + str(history.history["precision"][-1]) + "\n")
+            file.write("Final validation precision: " + str(history.history["val_precision"][-1]) + "\n")
+            file.write("Final training recall: " + str(history.history["recall"][-1]) + "\n")
+            file.write("Final validation recall: " + str(history.history["val_recall"][-1]) + "\n")
+            file.write("Final training f1_score: " + "\n" + str(history.history["f1_score"][-1]) + "\n")
+            file.write("Final validation f1_score: " + "\n" + str(history.history["val_f1_score"][-1]) + "\n")
 
     # Demonstrate the image taking process
     elif args.showcase:

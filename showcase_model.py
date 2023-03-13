@@ -14,6 +14,7 @@ import warnings
 import numpy as np
 import cv2
 import tensorflow as tf
+from timeit import default_timer
 from utils import create_rectangle, get_dictionary
 
 
@@ -178,13 +179,19 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
                 cv2.rectangle(frame, rect[0], rect[3], color, 2)
                 # Add information about prediction if expected, otherwise just show the name of the gesture
                 if predict and not pause_flag:
+                    pred_time_start = default_timer()
                     prediction = model(frame_cut[None, :],
                                        training=False).numpy()
                     probability = prediction.max(axis=-1).round(2)
                     txt = gesture_list[np.argmax(prediction, axis=1)[0]]
+                    pred_time = round(default_timer() - pred_time_start, 3)
                     if not lang:
                         txt = dictionary[txt]
                     txt += " (" + str(probability[0]) + ")"
+
+                    # Display average time per gesture
+                    cv2.putText(frame, "TPG: " + str(pred_time) + " s", (5, 470),
+                                cv2.FONT_HERSHEY_DUPLEX, 0.8, color, 2)
                 else:
                     txt = gesture.capitalize()
                     if not lang:

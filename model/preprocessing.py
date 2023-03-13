@@ -47,11 +47,11 @@ class AdaptiveThresholding(tf.keras.layers.Layer):
         """
         Actions to perform on the input batch during layer call within tf.keras model
 
-        Parameters
+        Parameters:
             input_batch: tf.data.dataset
                 Batch for the layer to perform operations on
 
-        Returns
+        Returns:
             tf.data.dataset
                 The dataset on which the apply_threshold function was mapped (applied to each element)
 
@@ -61,11 +61,11 @@ class AdaptiveThresholding(tf.keras.layers.Layer):
             """
             Apply adaptive thresholding on the given image (tf.Tensor object)
 
-            Parameters
+            Parameters:
                 image: tf.Tensor (dtype tf.uint8)
                     Image to apply adaptive thresholding on.
 
-            Returns
+            Returns:
                 np.ndarray
                     Numpy array that corresponds to the thresholded image
             """
@@ -158,11 +158,11 @@ class Blurring(tf.keras.layers.Layer):
         """
         Actions to perform on the input batch during layer call within tf.keras model
 
-        Parameters
+        Parameters:
             input_batch: tf.data.dataset
                 Batch for the layer to perform operations on
 
-        Returns
+        Returns:
             tf.data.dataset
                 The dataset on which the tfa.image filter function was applied
         """
@@ -211,11 +211,11 @@ class Grayscale(tf.keras.layers.Layer):
         """
         Actions to perform on the input batch during layer call within tf.keras model
 
-        Parameters
+        Parameters:
             input_batch: tf.data.dataset
                 Batch for the layer to perform operations on
 
-        Returns
+        Returns:
             tf.data.dataset
                 The dataset on which the tfa.image.rgb_to_grayscale function was applied
         """
@@ -228,3 +228,25 @@ class Grayscale(tf.keras.layers.Layer):
         """
 
         return super(Grayscale, self).get_config()
+
+
+def image_augmentation(images, labels, seed=123):
+    """
+    Set of image augmentation actions to apply to the training dataset.
+
+    Parameters:
+        images: tf.tensor
+            Element of the tf.data.dataset
+        labels: tf.tensor
+            Element of the tf.data.dataset
+        seed: tf.tensor (default 123)
+            Seed for the random operations
+
+    Returns
+        tf.tensor, tf.tensor
+            Augmented images and the labels
+    """
+    images = tf.image.stateless_random_flip_left_right(images, seed)
+    # TODO: Subclass keras.layers.Layer to create random rotation (use tfa.image.rotate)
+    # TODO: Subclass keras.layers.Layer to create random translation (height & width) (use tfa.image.translate)
+    return images, labels
