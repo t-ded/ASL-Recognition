@@ -45,7 +45,7 @@ import utils
 from collect_dataset import collect_data
 from showcase_collect_preprocessing import showcase_preprocessing
 from showcase_model import showcase_model
-from model.preprocessing import Grayscale, AdaptiveThresholding, Blurring
+from model.preprocessing import Grayscale, AdaptiveThresholding, Blurring, image_augmentation
 from model.model import build_model, build_preprocessing
 
 parser = argparse.ArgumentParser()
@@ -65,6 +65,7 @@ train_settings.add_argument("--experiment", default=None, type=int,
                             help="Number of this experiment (the settings will be saved in the respective newly created folder or loaded from an existing folder)")
 train_settings.add_argument("-tb", "--tensorboard", action="store_true", help="If given, set up TensorBoard callback for model training")
 train_settings.add_argument("-des", "--disable_early_stopping", action="store_false", help="If given, do not set up EarlyStopping callback for model training")
+train_settings.add_argument("-aug", "--augmentation", action="store_true", help="If given, perform image augmentation on the training dataset")
 
 # Specify the hyperparameters if the json file was not given
 hyperparameters = parser.add_argument_group("Hyperparameters")
@@ -220,7 +221,13 @@ def main(args):
                                                                                         seed=args.seed,
                                                                                         validation_split=args.split,
                                                                                         subset="both")
-        train_images = train_images.prefetch(buffer_size=tf.data.AUTOTUNE)
+
+        if args.augmentation:
+            augmentation_model = image_augmentation(seed=args.seed)
+            train_images = train_images.map(lambda x, y: (augmentation_model(x), y),
+                                            num_parallel_calls=tf.data.AUTOTUNE).prefetch(buffer_size=tf.data.AUTOTUNE)
+        else:
+            train_images = train_images.prefetch(buffer_size=tf.data.AUTOTUNE)
         test_images = test_images.prefetch(buffer_size=tf.data.AUTOTUNE)
 
         # Set up the log directories for checkpoints and tensorboard
@@ -314,7 +321,8 @@ def main(args):
         # Train the model according to the given instructions
         history = model.fit(train_images, validation_data=(test_images),
                             epochs=args.epochs,
-                            callbacks=callbacks)
+                            callbacks=callbacks,
+                            verbose=2)
 
         # Save the model into the appropriate folder
         model.save(filepath=save_dir,

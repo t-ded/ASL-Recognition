@@ -230,23 +230,83 @@ class Grayscale(tf.keras.layers.Layer):
         return super(Grayscale, self).get_config()
 
 
-def image_augmentation(images, labels, seed=123):
+class RandomRotate(tf.keras.layers.Layer):
     """
-    Set of image augmentation actions to apply to the training dataset.
+    A class for tensorflow.keras random rotation layer
+
+    Methods:
+        call(input_batch)
+            Operations performed on layer call within a tensorflow.keras model
+        get_config()
+            Output configuration for the layer for the purpose of model saving
+    """
+
+    def __init__(self, **kwargs):
+        """
+
+        Parameters:
+            **kwargs:
+                Keyword arguments inherited from the tf.keras.layers.Layer class
+        """
+
+        super(Grayscale, self).__init__()
+
+    def call(self, input_batch):
+        """
+        Actions to perform on the input batch during layer call within tf.keras model
+
+        Parameters:
+            input_batch: tf.data.dataset
+                Batch for the layer to perform operations on
+
+        Returns:
+            tf.data.dataset
+                The dataset on which the tfa.image.rotate function was applied
+        """
+
+        return tf.image.rgb_to_grayscale(input_batch)
+
+    def get_config(self):
+        """
+        Return configuration of the layer for the purpose of model saving
+        """
+
+        return super(Grayscale, self).get_config()
+
+
+def image_augmentation(seed=123, rot_factor=0.15,
+                       height_factor=0.1, width_factor=0.1):
+    """
+    Build a data augmentation tf.keras.Sequential model
 
     Parameters:
-        images: tf.tensor
-            Element of the tf.data.dataset
-        labels: tf.tensor
-            Element of the tf.data.dataset
         seed: tf.tensor (default 123)
             Seed for the random operations
+        rot_factor: float (default 0.15)
+            Rotation factor (as a fraction of 2 Pi) to use for rotation bounds
+        height_factor: float (default 0.1)
+            Factor which to use for height shift bounds
+        width_factor: float (default 0.1)
+            Factor which to use for width shift bounds
 
     Returns
-        tf.tensor, tf.tensor
-            Augmented images and the labels
+        tf.keras.Sequential
+            Sequential model with augmentation layers
     """
-    images = tf.image.stateless_random_flip_left_right(images, seed)
-    # TODO: Subclass keras.layers.Layer to create random rotation (use tfa.image.rotate)
-    # TODO: Subclass keras.layers.Layer to create random translation (height & width) (use tfa.image.translate)
-    return images, labels
+
+    augmentation = tf.keras.Sequential(
+        [
+            tf.keras.layers.RandomFlip(mode="horizontal",
+                                       seed=seed),
+            tf.keras.layers.RandomRotation(factor=rot_factor,
+                                           fill_mode="nearest",
+                                           seed=seed),
+            tf.keras.layers.RandomTranslation(height_factor=height_factor,
+                                              width_factor=width_factor,
+                                              fill_mode="nearest",
+                                              seed=seed)
+        ],
+        name="image_augmentation"
+    )
+
+    return augmentation
