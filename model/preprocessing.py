@@ -95,7 +95,9 @@ class AdaptiveThresholding(tf.keras.layers.Layer):
         return tf.map_fn(lambda image: tf.py_function(func=apply_thresholding,
                                                       inp=[image],
                                                       Tout=tf.uint8),
-                         input_batch)
+                         input_batch,
+                         fn_output_signature=tf.TensorSpec(input_batch.shape[1:],
+                                                           dtype=tf.uint8))
 
     def compute_output_shape(self, input_shape):
         """
@@ -108,7 +110,8 @@ class AdaptiveThresholding(tf.keras.layers.Layer):
             tuple of 4 ints
                 Output shape (same as the input shape)
         """
-        return tf.TensorShape([input_shape[0], input_shape[1], input_shape[2], input_shape[3]])
+
+        return tf.TensorShape([*input_shape])
 
     def get_config(self):
         """
@@ -230,57 +233,13 @@ class Grayscale(tf.keras.layers.Layer):
         return super(Grayscale, self).get_config()
 
 
-class RandomRotate(tf.keras.layers.Layer):
-    """
-    A class for tensorflow.keras random rotation layer
-
-    Methods:
-        call(input_batch)
-            Operations performed on layer call within a tensorflow.keras model
-        get_config()
-            Output configuration for the layer for the purpose of model saving
-    """
-
-    def __init__(self, **kwargs):
-        """
-
-        Parameters:
-            **kwargs:
-                Keyword arguments inherited from the tf.keras.layers.Layer class
-        """
-
-        super(Grayscale, self).__init__()
-
-    def call(self, input_batch):
-        """
-        Actions to perform on the input batch during layer call within tf.keras model
-
-        Parameters:
-            input_batch: tf.data.dataset
-                Batch for the layer to perform operations on
-
-        Returns:
-            tf.data.dataset
-                The dataset on which the tfa.image.rotate function was applied
-        """
-
-        return tf.image.rgb_to_grayscale(input_batch)
-
-    def get_config(self):
-        """
-        Return configuration of the layer for the purpose of model saving
-        """
-
-        return super(Grayscale, self).get_config()
-
-
 def image_augmentation(seed=123, rot_factor=0.15,
                        height_factor=0.1, width_factor=0.1):
     """
     Build a data augmentation tf.keras.Sequential model
 
     Parameters:
-        seed: tf.tensor (default 123)
+        seed: int (default 123)
             Seed for the random operations
         rot_factor: float (default 0.15)
             Rotation factor (as a fraction of 2 Pi) to use for rotation bounds

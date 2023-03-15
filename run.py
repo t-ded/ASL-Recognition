@@ -96,7 +96,7 @@ def main(args):
         config = json.load(config_file)
 
     # Default procedure
-    if not args:
+    if not (args.collect or args.preprocess or args.train or args.showcase or args.predict):
         print("\nNo arguments specified, will try to run the showcasing without prediction\n")
         args.showcase = True
 
@@ -299,7 +299,9 @@ def main(args):
                       metrics=[tf.keras.metrics.CategoricalAccuracy(name="accuracy"),
                                tf.keras.metrics.Recall(name="recall"),
                                tf.keras.metrics.Precision(name="precision"),
-                               tfa.metrics.F1Score(len(gestures), name="f1_score")])
+                               tfa.metrics.F1Score(len(gestures),
+                                                   average="macro",
+                                                   name="f1_score")])
 
         # Show summaries for all the models
         utils.indent(n=2)
@@ -322,7 +324,7 @@ def main(args):
         history = model.fit(train_images, validation_data=(test_images),
                             epochs=args.epochs,
                             callbacks=callbacks,
-                            verbose=2)
+                            verbose=1)
 
         # Save the model into the appropriate folder
         model.save(filepath=save_dir,
