@@ -158,7 +158,7 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
             kernel_size = match.group(1)
 
             # If strides is not specified, set it to default
-            strides = re.search(r"-k(\d*)", layer)
+            strides = re.search(r"-s(\d*)", layer)
             if not strides:
                 strides = 1
             else:
