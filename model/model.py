@@ -223,13 +223,11 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
                 # If the current input is flattened, use 1D pooling
                 if flatten_flag:
                     hidden = tf.keras.layers.MaxPool1D(pool_size=int(pool_size),
-                                                       strides=strides,
-                                                       padding="same")(hidden)
+                                                       strides=strides)(hidden)
                     flatten_flag = 0
                 else:
                     hidden = tf.keras.layers.MaxPool2D(pool_size=int(pool_size),
-                                                       strides=strides,
-                                                       padding="same")(hidden)
+                                                       strides=strides)(hidden)
 
             else:
                 wrn = "\nThe type for the pooling layer is not valid.\n"

@@ -22,7 +22,6 @@ Look	Podivat se, podivej se
 Have	Mit
 Correct	Spravne
 Want	Chtit
-Where	Kde
 A	A
 B	B
 C	C

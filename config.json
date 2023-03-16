@@ -8,7 +8,7 @@
     "Model": {
         "Current model": "model/current",
         "Model experiments": "model/experiments",
-        "Default architecture": "I,C-f64-k3,C-f64-k3,P-tm-p2,C-f128-k3,C-f128-k3,P-tm-p2,C-f256-k3,C-f256-k3,C-f256-k3,P-tm-p2,F,H-4096,D-0.1,H-4096,D-0.1,O",
+        "Default architecture": "I,C-f64-k3,C-f64-k3,P-tm-p2,C-f128-k3,C-f128-k3,P-tm-p2,C-f256-k3,C-f256-k3,C-f256-k3,P-tm-p2,C-f512-k3,C-f512-k3,C-f512-k3,P-tm-p2,C-f512-k3,C-f512-k3,C-f512-k3,P-tm-p2,F,H-4096,D-0.1,H-4096,D-0.1,O",
         "Default preprocessing": "I,G,B-tm-k7,T-tg-b3-c(3),R"
     },
     "General parameters": {
