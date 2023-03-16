@@ -69,7 +69,7 @@ train_settings.add_argument("-aug", "--augmentation", action="store_true", help=
 
 # Specify the hyperparameters if the json file was not given
 hyperparameters = parser.add_argument_group("Hyperparameters")
-hyperparameters.add_argument("-bs", "--batch_size", default=64, type=int, help="Batch size")
+hyperparameters.add_argument("-bs", "--batch_size", default=256, type=int, help="Batch size")
 hyperparameters.add_argument("-e", "--epochs", default=10, type=int, help="Number of epochs")
 hyperparameters.add_argument("-opt", "--optimizer", default="adam", choices=["adam", "SGD"], help="Optimizer for training")
 hyperparameters.add_argument("-lr", "--learning_rate", default=0.01, type=float, help="Starting learning rate")
