@@ -9,7 +9,7 @@
         "Current model": "model/current",
         "Model experiments": "model/experiments",
         "Default architecture": "I,C-f32-k3-s2,P-ta-p2-s2,C-f64-k3,P-ta-p2-s2,F,H-128,D-0.25,O",
-        "Default preprocessing": "I,G,B-tm-k3,T-tm-b3-c(2),R"
+        "Default preprocessing": "I,G,B-tm-k7,T-tg-b3-c(3),R"
     },
     "General parameters": {
         "Image size": 196,
