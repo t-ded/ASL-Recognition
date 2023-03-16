@@ -42,6 +42,7 @@ class AdaptiveThresholding(tf.keras.layers.Layer):
         self.thresholding_type = thresholding_type
         self.block_size = block_size
         self.constant = constant
+        self.trainable = False
 
     def call(self, input_batch):
         """
@@ -156,6 +157,7 @@ class Blurring(tf.keras.layers.Layer):
         self.blurring_type = blurring_type
         self.kernel_size = kernel_size
         self.sigma = sigma
+        self.trainable = False
 
     def call(self, input_batch):
         """
@@ -209,6 +211,7 @@ class Grayscale(tf.keras.layers.Layer):
         """
 
         super(Grayscale, self).__init__()
+        self.trainable = False
 
     def call(self, input_batch):
         """
