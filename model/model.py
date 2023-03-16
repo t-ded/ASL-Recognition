@@ -169,13 +169,15 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
                 hidden = tf.keras.layers.Conv1D(filters=int(filters),
                                                 kernel_size=int(kernel_size),
                                                 strides=int(strides),
-                                                activation=tf.nn.relu)(hidden)
+                                                activation=tf.nn.relu,
+                                                padding="same")(hidden)
                 flatten_flag = 0
             else:
                 hidden = tf.keras.layers.Conv2D(filters=int(filters),
                                                 kernel_size=int(kernel_size),
                                                 strides=int(strides),
-                                                activation=tf.nn.relu)(hidden)
+                                                activation=tf.nn.relu,
+                                                padding="same")(hidden)
 
         # Pooling layer
         elif layer_name == "P":
@@ -221,11 +223,13 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
                 # If the current input is flattened, use 1D pooling
                 if flatten_flag:
                     hidden = tf.keras.layers.MaxPool1D(pool_size=int(pool_size),
-                                                       strides=strides)(hidden)
+                                                       strides=strides,
+                                                       padding="same")(hidden)
                     flatten_flag = 0
                 else:
                     hidden = tf.keras.layers.MaxPool2D(pool_size=int(pool_size),
-                                                       strides=strides)(hidden)
+                                                       strides=strides,
+                                                       padding="same")(hidden)
 
             else:
                 wrn = "\nThe type for the pooling layer is not valid.\n"
