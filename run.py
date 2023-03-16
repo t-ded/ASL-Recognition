@@ -2,6 +2,8 @@
 # disable=C0301, C0103, E1101
 # TODO: Adjust README.md file
 # TODO: Adjust the docstring for this run function
+# TODO: Add BatchNormalization layer support to model.py
+# TODO: Add BatchNormalization layers to default architecture in config.json
 """
 A simple function to enable running
 the different scripts from command line.
@@ -66,6 +68,7 @@ train_settings.add_argument("--experiment", default=None, type=int,
 train_settings.add_argument("-tb", "--tensorboard", action="store_true", help="If given, set up TensorBoard callback for model training")
 train_settings.add_argument("-des", "--disable_early_stopping", action="store_false", help="If given, do not set up EarlyStopping callback for model training")
 train_settings.add_argument("-aug", "--augmentation", action="store_true", help="If given, perform image augmentation on the training dataset")
+# TODO - Decide if this is a good approach # train_settings.add_argument("-efnet", "--efficient_net", action="store_true", help="If given, omit training of a new model and only finetune the output layers of the EfficientNetV2B0")
 
 # Specify the hyperparameters if the json file was not given
 hyperparameters = parser.add_argument_group("Hyperparameters")
