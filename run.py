@@ -127,10 +127,10 @@ def main(args):
             increment = config["General parameters"]["Top-up amount"]
             print("You are trying to run the collection procedure even though",
                   "the desired amount has already been reached.",
-                  "Do you want to increase the desired amount per gesture",
+                  "Do you want to increase the current amount per gesture",
                   f"by {increment}?")
             if input("Proceed (y/[n])?").lower() == "y":
-                desired_amount = {letter: desired_amount[letter] + increment for letter in desired_amount.keys()}
+                desired_amount = {letter: current_amount[letter] + increment for letter in current_amount.keys()}
 
         # Perform the dataset collection procedure
         collect_data(gestures, examples=example_dir,
