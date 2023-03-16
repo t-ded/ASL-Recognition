@@ -52,32 +52,19 @@ def showcase_preprocessing(inp_shape):
             cv2.resizeWindow(f"Preprocessing pipeline {i + 1}", 320, 240)
             cv2.moveWindow(f"Preprocessing pipeline {i + 1}", 655 + 325 * (i % 2), 16 + 270 * (i // 2))
 
+        # Set a list of instructions
+        instructions = ["I,G,B-tm-k3,T-tg-b5-c(3)",
+                        "I,G,B-tm-k3,T-tg-b5-c(3)",
+                        "I,G,B-tm-k3,T-tg-b5-c(3)",
+                        "I,G,B-tm-k3,T-tg-b5-c(3)",
+                        "I,G,B-tm-k3,T-tg-b5-c(3)",
+                        "I,G,B-tm-k3,T-tg-b5-c(3)"]
+
         # Setting up preprocessing sequential pipelines
-        pipeline1 = build_preprocessing(inp_shape=inp_shape,
-                                        instructions="I,G,B-tm-k3,T-tm-b3-c(2)",
-                                        name="Preprocessing_pipeline_1")
-
-        pipeline2 = build_preprocessing(inp_shape=inp_shape,
-                                        instructions="I,G,B-tm-k3,T-tm-b3-c(-3)",
-                                        name="Preprocessing_pipeline_2")
-
-        pipeline3 = build_preprocessing(inp_shape=inp_shape,
-                                        instructions="I,G,B-tm-k3,T-tm-b3-c(-2)",
-                                        name="Preprocessing_pipeline_3")
-
-        pipeline4 = build_preprocessing(inp_shape=inp_shape,
-                                        instructions="I,G,B-tm-k3,T-tm-b3-c(-1)",
-                                        name="Preprocessing_pipeline_4")
-
-        pipeline5 = build_preprocessing(inp_shape=inp_shape,
-                                        instructions="I,G,B-tm-k3,T-tm-b3-c(0)",
-                                        name="Preprocessing_pipeline_5")
-
-        pipeline6 = build_preprocessing(inp_shape=inp_shape,
-                                        instructions="I,G,B-tm-k3,T-tm-b3-c(1)",
-                                        name="Preprocessing_pipeline_6")
-        pipelines_list = [pipeline1, pipeline2, pipeline3,
-                          pipeline4, pipeline5, pipeline6]
+        pipelines_list = [build_preprocessing(inp_shape=inp_shape,
+                                              instructions=instruction,
+                                              name=f"Preprocessing_pipeline_{i + 1}")
+                          for i, instruction in enumerate(instructions)]
 
         rectangle_position = 0  # Which position of the rectangle to use
         save_counter = 0  # Count the number of times user has requested saving pipelines' results
@@ -109,15 +96,8 @@ def showcase_preprocessing(inp_shape):
                                                              dtype=uint8),
                                            axis=0)
 
-            # Try different preprocessing pipelines
-            frame_binary_1 = pipeline1(frame_cut_tensor)
-            frame_binary_2 = pipeline2(frame_cut_tensor)
-            frame_binary_3 = pipeline3(frame_cut_tensor)
-            frame_binary_4 = pipeline4(frame_cut_tensor)
-            frame_binary_5 = pipeline5(frame_cut_tensor)
-            frame_binary_6 = pipeline6(frame_cut_tensor)
-            results_list = [frame_binary_1, frame_binary_2, frame_binary_3,
-                            frame_binary_4, frame_binary_5, frame_binary_6]
+            # Obtain results from different preprocessing pipelines
+            results_list = [pipeline(frame_cut_tensor) for pipeline in pipelines_list]
 
             # Live view with frame
             cv2.rectangle(frame, rect[0], rect[3], (0, 255, 0), 2)
@@ -142,6 +122,9 @@ def showcase_preprocessing(inp_shape):
                     with open(current_name + "\\pipeline_summaries.txt", "a+") as file:
                         for pipeline in pipelines_list:
                             pipeline.summary(print_fn=lambda x: file.write(x + "\n"))
+                            file.write("\n")
+                            for layer in pipeline.layers:
+                                file.write(str(layer.get_config()))
                             file.write("\n" * 3)
 
                 # Set up the folder for a new save
@@ -150,7 +133,7 @@ def showcase_preprocessing(inp_shape):
 
                 # Create the naming for the files with the desired padding
                 for i, result in enumerate(results_list):
-                    img_name = "pipeline" + "_" + str(i + 1) + ".jpg"
+                    img_name = str(instructions[i]) + ".jpg"
                     img_path = r"%s" % os.path.join(save_name, img_name)
 
                     # Save each pipeline's result

@@ -1,0 +1,19 @@
+Model: "Preprocessing_pipeline_1"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ preprocessing_input (InputL  [(None, 196, 196, 3)]    0         
+ ayer)                                                           
+                                                                 
+ grayscale (Grayscale)       (None, 196, 196, 1)       0         
+                                                                 
+ blurring (Blurring)         (None, 196, 196, 1)       0         
+                                                                 
+ adaptive_thresholding (Adap  (None, 196, 196, 1)      0         
+ tiveThresholding)                                               
+                                                                 
+=================================================================
+Total params: 0
+Trainable params: 0
+Non-trainable params: 0
+_________________________________________________________________

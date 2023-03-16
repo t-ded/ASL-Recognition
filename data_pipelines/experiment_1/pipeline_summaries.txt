@@ -1,0 +1,132 @@
+Model: "Preprocessing_pipeline_1"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ preprocessing_input (InputL  [(None, 196, 196, 3)]    0         
+ ayer)                                                           
+                                                                 
+ grayscale (Grayscale)       (None, 196, 196, 1)       0         
+                                                                 
+ blurring (Blurring)         (None, 196, 196, 1)       0         
+                                                                 
+ adaptive_thresholding (Adap  (None, 196, 196, 1)      0         
+ tiveThresholding)                                               
+                                                                 
+=================================================================
+Total params: 0
+Trainable params: 0
+Non-trainable params: 0
+_________________________________________________________________
+
+
+
+Model: "Preprocessing_pipeline_2"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ preprocessing_input (InputL  [(None, 196, 196, 3)]    0         
+ ayer)                                                           
+                                                                 
+ grayscale_1 (Grayscale)     (None, 196, 196, 1)       0         
+                                                                 
+ blurring_1 (Blurring)       (None, 196, 196, 1)       0         
+                                                                 
+ adaptive_thresholding_1 (Ad  (None, 196, 196, 1)      0         
+ aptiveThresholding)                                             
+                                                                 
+=================================================================
+Total params: 0
+Trainable params: 0
+Non-trainable params: 0
+_________________________________________________________________
+
+
+
+Model: "Preprocessing_pipeline_3"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ preprocessing_input (InputL  [(None, 196, 196, 3)]    0         
+ ayer)                                                           
+                                                                 
+ grayscale_2 (Grayscale)     (None, 196, 196, 1)       0         
+                                                                 
+ blurring_2 (Blurring)       (None, 196, 196, 1)       0         
+                                                                 
+ adaptive_thresholding_2 (Ad  (None, 196, 196, 1)      0         
+ aptiveThresholding)                                             
+                                                                 
+=================================================================
+Total params: 0
+Trainable params: 0
+Non-trainable params: 0
+_________________________________________________________________
+
+
+
+Model: "Preprocessing_pipeline_4"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ preprocessing_input (InputL  [(None, 196, 196, 3)]    0         
+ ayer)                                                           
+                                                                 
+ grayscale_3 (Grayscale)     (None, 196, 196, 1)       0         
+                                                                 
+ blurring_3 (Blurring)       (None, 196, 196, 1)       0         
+                                                                 
+ adaptive_thresholding_3 (Ad  (None, 196, 196, 1)      0         
+ aptiveThresholding)                                             
+                                                                 
+=================================================================
+Total params: 0
+Trainable params: 0
+Non-trainable params: 0
+_________________________________________________________________
+
+
+
+Model: "Preprocessing_pipeline_5"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ preprocessing_input (InputL  [(None, 196, 196, 3)]    0         
+ ayer)                                                           
+                                                                 
+ grayscale_4 (Grayscale)     (None, 196, 196, 1)       0         
+                                                                 
+ blurring_4 (Blurring)       (None, 196, 196, 1)       0         
+                                                                 
+ adaptive_thresholding_4 (Ad  (None, 196, 196, 1)      0         
+ aptiveThresholding)                                             
+                                                                 
+=================================================================
+Total params: 0
+Trainable params: 0
+Non-trainable params: 0
+_________________________________________________________________
+
+
+
+Model: "Preprocessing_pipeline_6"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ preprocessing_input (InputL  [(None, 196, 196, 3)]    0         
+ ayer)                                                           
+                                                                 
+ grayscale_5 (Grayscale)     (None, 196, 196, 1)       0         
+                                                                 
+ blurring_5 (Blurring)       (None, 196, 196, 1)       0         
+                                                                 
+ adaptive_thresholding_5 (Ad  (None, 196, 196, 1)      0         
+ aptiveThresholding)                                             
+                                                                 
+=================================================================
+Total params: 0
+Trainable params: 0
+Non-trainable params: 0
+_________________________________________________________________
+
+
+
