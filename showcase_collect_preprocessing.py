@@ -124,7 +124,7 @@ def showcase_preprocessing(inp_shape):
                             pipeline.summary(print_fn=lambda x: file.write(x + "\n"))
                             file.write("\n")
                             for layer in pipeline.layers:
-                                file.write(str(layer.get_config()))
+                                file.write(str(layer.get_config()) + "\n")
                             file.write("\n" * 3)
 
                 # Set up the folder for a new save
@@ -133,7 +133,7 @@ def showcase_preprocessing(inp_shape):
 
                 # Create the naming for the files with the desired padding
                 for i, result in enumerate(results_list):
-                    img_name = str(instructions[i]) + ".jpg"
+                    img_name = "pipeline" + "_" + str(i + 1) + "_" + instructions[i] + ".jpg"
                     img_path = r"%s" % os.path.join(save_name, img_name)
 
                     # Save each pipeline's result
