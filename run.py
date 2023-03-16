@@ -48,7 +48,7 @@ from showcase_model import showcase_model
 from model.preprocessing import Grayscale, AdaptiveThresholding, Blurring, image_augmentation
 from model.model import build_model, build_preprocessing
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(allow_abbrev=False)
 parser.add_argument("--config_dir", default="", type=str, help="Directory with the config.json file")
 
 # Specify procedure
