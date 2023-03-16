@@ -53,12 +53,12 @@ def showcase_preprocessing(inp_shape):
             cv2.moveWindow(f"Preprocessing pipeline {i + 1}", 655 + 325 * (i % 2), 16 + 270 * (i // 2))
 
         # Set a list of instructions
-        instructions = ["I,G,B-tm-k3,T-tg-b5-c(3)",
-                        "I,G,B-tm-k3,T-tg-b5-c(3)",
-                        "I,G,B-tm-k3,T-tg-b5-c(3)",
-                        "I,G,B-tm-k3,T-tg-b5-c(3)",
-                        "I,G,B-tm-k3,T-tg-b5-c(3)",
-                        "I,G,B-tm-k3,T-tg-b5-c(3)"]
+        instructions = ["I,G,B-tm-k7,T-tm-b5-c(3)",
+                        "I,G,B-tm-k7,T-tg-b5-c(3)",
+                        "I,G,B-tm-k7,T-tm-b7-c(3)",
+                        "I,G,B-tm-k7,T-tg-b7-c(3)",
+                        "I,G,B-tg-k7-s1,T-tm-b5-c(3)",
+                        "I,G,B-tg-k7-s1,T-tg-b5-c(3)"]
 
         # Setting up preprocessing sequential pipelines
         pipelines_list = [build_preprocessing(inp_shape=inp_shape,
@@ -114,7 +114,6 @@ def showcase_preprocessing(inp_shape):
                 # Set up the parent folder for this experiment and add preprocessing information
                 if not save_counter:
                     new_folder("data_pipelines")
-# TODO: Might eventually add repair padding function for folders (aaa_1) -> use that here on "data_pipelines"
                     current_name = f"data_pipelines/experiment_{len(os.listdir('data_pipelines')) + 1}"
                     new_folder(current_name)
 
@@ -127,9 +126,15 @@ def showcase_preprocessing(inp_shape):
                                 file.write(str(layer.get_config()) + "\n")
                             file.write("\n" * 3)
 
-                # Set up the folder for a new save
+                # Set up the folder for a new save, save coloured version too
                 save_name = current_name + f"/save_{save_counter + 1}"
                 new_folder(save_name)
+                coloured_path = r"%s" % os.path.join(save_name,
+                                                     "coloured.jpg")
+                if not cv2.imwrite(coloured_path,
+                                   frame_cut_tensor.numpy()[0, :, :, :]):
+                    print("Something went wrong during this save attempt:",
+                          f"coloured_{save_counter + 1}")
 
                 # Create the naming for the files with the desired padding
                 for i, result in enumerate(results_list):

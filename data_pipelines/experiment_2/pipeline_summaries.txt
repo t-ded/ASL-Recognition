@@ -18,6 +18,11 @@ Trainable params: 0
 Non-trainable params: 0
 _________________________________________________________________
 
+{'batch_input_shape': (None, 196, 196, 3), 'dtype': 'uint8', 'sparse': False, 'ragged': False, 'name': 'preprocessing_input'}
+{'name': 'grayscale', 'trainable': False, 'dtype': 'float32'}
+{'name': 'blurring', 'trainable': False, 'dtype': 'float32', 'blurring_type': 'median', 'kernel_size': 7, 'sigma': 1.0}
+{'name': 'adaptive_thresholding', 'trainable': False, 'dtype': 'float32', 'thresholding_type': 'mean', 'block_size': 5, 'constant': 3.0}
+
 
 
 Model: "Preprocessing_pipeline_2"
@@ -39,6 +44,11 @@ Total params: 0
 Trainable params: 0
 Non-trainable params: 0
 _________________________________________________________________
+
+{'batch_input_shape': (None, 196, 196, 3), 'dtype': 'uint8', 'sparse': False, 'ragged': False, 'name': 'preprocessing_input'}
+{'name': 'grayscale_1', 'trainable': False, 'dtype': 'float32'}
+{'name': 'blurring_1', 'trainable': False, 'dtype': 'float32', 'blurring_type': 'median', 'kernel_size': 7, 'sigma': 1.0}
+{'name': 'adaptive_thresholding_1', 'trainable': False, 'dtype': 'float32', 'thresholding_type': 'gaussian', 'block_size': 5, 'constant': 3.0}
 
 
 
@@ -62,6 +72,11 @@ Trainable params: 0
 Non-trainable params: 0
 _________________________________________________________________
 
+{'batch_input_shape': (None, 196, 196, 3), 'dtype': 'uint8', 'sparse': False, 'ragged': False, 'name': 'preprocessing_input'}
+{'name': 'grayscale_2', 'trainable': False, 'dtype': 'float32'}
+{'name': 'blurring_2', 'trainable': False, 'dtype': 'float32', 'blurring_type': 'median', 'kernel_size': 7, 'sigma': 1.0}
+{'name': 'adaptive_thresholding_2', 'trainable': False, 'dtype': 'float32', 'thresholding_type': 'mean', 'block_size': 7, 'constant': 3.0}
+
 
 
 Model: "Preprocessing_pipeline_4"
@@ -83,6 +98,11 @@ Total params: 0
 Trainable params: 0
 Non-trainable params: 0
 _________________________________________________________________
+
+{'batch_input_shape': (None, 196, 196, 3), 'dtype': 'uint8', 'sparse': False, 'ragged': False, 'name': 'preprocessing_input'}
+{'name': 'grayscale_3', 'trainable': False, 'dtype': 'float32'}
+{'name': 'blurring_3', 'trainable': False, 'dtype': 'float32', 'blurring_type': 'median', 'kernel_size': 7, 'sigma': 1.0}
+{'name': 'adaptive_thresholding_3', 'trainable': False, 'dtype': 'float32', 'thresholding_type': 'gaussian', 'block_size': 7, 'constant': 3.0}
 
 
 
@@ -106,6 +126,11 @@ Trainable params: 0
 Non-trainable params: 0
 _________________________________________________________________
 
+{'batch_input_shape': (None, 196, 196, 3), 'dtype': 'uint8', 'sparse': False, 'ragged': False, 'name': 'preprocessing_input'}
+{'name': 'grayscale_4', 'trainable': False, 'dtype': 'float32'}
+{'name': 'blurring_4', 'trainable': False, 'dtype': 'float32', 'blurring_type': 'gaussian', 'kernel_size': 7, 'sigma': 1.0}
+{'name': 'adaptive_thresholding_4', 'trainable': False, 'dtype': 'float32', 'thresholding_type': 'mean', 'block_size': 5, 'constant': 3.0}
+
 
 
 Model: "Preprocessing_pipeline_6"
@@ -127,6 +152,11 @@ Total params: 0
 Trainable params: 0
 Non-trainable params: 0
 _________________________________________________________________
+
+{'batch_input_shape': (None, 196, 196, 3), 'dtype': 'uint8', 'sparse': False, 'ragged': False, 'name': 'preprocessing_input'}
+{'name': 'grayscale_5', 'trainable': False, 'dtype': 'float32'}
+{'name': 'blurring_5', 'trainable': False, 'dtype': 'float32', 'blurring_type': 'gaussian', 'kernel_size': 7, 'sigma': 1.0}
+{'name': 'adaptive_thresholding_5', 'trainable': False, 'dtype': 'float32', 'thresholding_type': 'gaussian', 'block_size': 5, 'constant': 3.0}
 
 
 
