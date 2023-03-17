@@ -32,9 +32,11 @@ def showcase_preprocessing(inp_shape):
 
     # The rectangle in the frame that is cropped from the web camera image
     # (one for torso location, one for fingerspelling location)
-    rect_torso = create_rectangle((225, 275), 200, 200)
-    rect_fingerspell_1 = create_rectangle((50, 50), 200, 200)
-    rect_fingerspell_2 = create_rectangle((400, 50), 200, 200)
+    img_size = inp_shape[0]
+    rect_size = int(img_size * 1.25) + 4
+    rect_torso = create_rectangle((225, 225), rect_size, rect_size)
+    rect_fingerspell_1 = create_rectangle((50, 50), rect_size, rect_size)
+    rect_fingerspell_2 = create_rectangle((350, 50), rect_size, rect_size)
     rect = rect_torso
 
     # Encapsulate the whole process to be able to close cameras in case of error
@@ -93,6 +95,7 @@ def showcase_preprocessing(inp_shape):
             # Create rectangle cut
             frame_cut = frame[(rect[0][1] + 2):(rect[2][1] - 2),
                               (rect[0][0] + 2):(rect[1][0] - 2)]
+            frame_cut = cv2.resize(frame_cut, (img_size, img_size))
             frame_cut_tensor = expand_dims(convert_to_tensor(frame_cut,
                                                              dtype=uint8),
                                            axis=0)

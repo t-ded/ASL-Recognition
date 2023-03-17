@@ -106,9 +106,10 @@ def collect_data(gesture_list, examples="Examples", data_directory="Data",
 
     # The rectangle in the frame that is cropped from the web camera image
     # (one for torso location, one for fingerspelling location)
-    rect_torso = create_rectangle((225, 275), img_size + 4, img_size + 4)
-    rect_fingerspell_1 = create_rectangle((50, 50), img_size + 4, img_size + 4)
-    rect_fingerspell_2 = create_rectangle((400, 50), img_size + 4, img_size + 4)
+    rect_size = int(img_size * 1.25) + 4
+    rect_torso = create_rectangle((225, 225), rect_size, rect_size)
+    rect_fingerspell_1 = create_rectangle((50, 50), rect_size, rect_size)
+    rect_fingerspell_2 = create_rectangle((350, 50), rect_size, rect_size)
     rect = rect_torso
 
     # Encapsulate the whole process to be able to close cameras in case of error
@@ -118,12 +119,12 @@ def collect_data(gesture_list, examples="Examples", data_directory="Data",
 
         # Establish the windows and place them accordingly
         cv2.namedWindow("Camera view")
-        cv2.resizeWindow("Camera view", 1080, 720)
-        cv2.moveWindow("Camera view", 100, 150)
+        cv2.resizeWindow("Camera view", 800, 600)
+        cv2.moveWindow("Camera view", 25, 150)
 
         cv2.namedWindow("Example")
-        cv2.resizeWindow("Example", 480, 360)
-        cv2.moveWindow("Example", 750, 230)
+        cv2.resizeWindow("Example", 640, 480)
+        cv2.moveWindow("Example", 850, 230)
 
         lang = True  # To let the user change language, True stands for English, False for Czech
         rectangle_position = 0  # Which position of the rectangle to use
@@ -200,7 +201,7 @@ def collect_data(gesture_list, examples="Examples", data_directory="Data",
                 cv2.putText(frame, "ETA: " + eta, (5, 470),
                             cv2.FONT_HERSHEY_DUPLEX, 0.8, color, 2)
 
-                cv2.imshow("Camera view", frame)
+                cv2.imshow("Camera view", cv2.resize(frame, (800, 600)))
 
                 # Show example on new gesture
                 if not flag:

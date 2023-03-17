@@ -4,7 +4,7 @@ You	Ty
 Your	Tvuj
 In	V, Uvnitr
 To	Na, k, do
-With	S (nekym, necim)
+With	S (necim)
 Yes	Ano
 No	Ne
 Well	Inu
@@ -18,7 +18,7 @@ Money	Penize
 Work	Prace
 Ask	Zeptat se
 Go	Jit, jet
-Look	Podivat se, podivej se
+Look	Podivat se
 Have	Mit
 Correct	Spravne
 Want	Chtit

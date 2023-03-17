@@ -97,9 +97,10 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
 
     # The rectangle in the frame that is cropped from the web camera image
     # (one for torso location, one for fingerspelling location)
-    rect_torso = create_rectangle((225, 275), img_size + 4, img_size + 4)
-    rect_fingerspell_1 = create_rectangle((50, 50), img_size + 4, img_size + 4)
-    rect_fingerspell_2 = create_rectangle((400, 50), img_size + 4, img_size + 4)
+    rect_size = int(img_size * 1.25) + 4
+    rect_torso = create_rectangle((225, 225), rect_size, rect_size)
+    rect_fingerspell_1 = create_rectangle((50, 50), rect_size, rect_size)
+    rect_fingerspell_2 = create_rectangle((350, 50), rect_size, rect_size)
     rect = rect_torso
 
     # Naive solution to allow looping through the gestures in prediction environment
@@ -113,12 +114,12 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
 
         # Establish the windows and place them accordingly
         cv2.namedWindow("Camera view")
-        cv2.resizeWindow("Camera view", 1080, 720)
-        cv2.moveWindow("Camera view", 100, 150)
+        cv2.resizeWindow("Camera view", 800, 600)
+        cv2.moveWindow("Camera view", 25, 150)
 
         cv2.namedWindow("Example")
-        cv2.resizeWindow("Example", 480, 360)
-        cv2.moveWindow("Example", 750, 230)
+        cv2.resizeWindow("Example", 640, 480)
+        cv2.moveWindow("Example", 850, 230)
 
         lang = True  # To let the user change language, True stands for English, False for Czech
         rectangle_position = 0  # Which position of the rectangle to use
@@ -168,6 +169,7 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
                 # Create rectangle cut
                 frame_cut = frame[(rect[0][1] + 2):(rect[2][1] - 2),
                                   (rect[0][0] + 2):(rect[1][0] - 2)]
+                frame_cut = cv2.resize(frame_cut, (img_size, img_size))
 
                 # Adjust the color of the text and frame based on the current state
                 # Green - running model prediction, Orange - model prediction is paused
@@ -194,17 +196,17 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
                     cv2.putText(frame, "TPG: " + str(pred_time) + " s", (5, 470),
                                 cv2.FONT_HERSHEY_DUPLEX, 0.8, color, 2)
                 else:
-                    txt = gesture.capitalize()
+                    txt = gesture
                     if not lang:
                         txt = dictionary[txt]
                 cv2.putText(frame, txt, (rect[0][0], rect[0][1] - 15),
                             cv2.FONT_HERSHEY_DUPLEX, 1, color, 2)
-                cv2.imshow("Camera view", frame)
+                cv2.imshow("Camera view", cv2.resize(frame, (800, 600)))
 
                 # Show example on new gesture
                 if not flag:
                     example = cv2.imread(f"{os.path.join(examples, gesture)}" + ".jpg")
-                    cv2.imshow("Example", cv2.resize(example, (480, 360)))
+                    cv2.imshow("Example", cv2.resize(example, (640, 480)))
                     flag = 1
 
             if exit_flag:
