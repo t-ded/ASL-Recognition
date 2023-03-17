@@ -10,6 +10,11 @@ Modularized and parametrized preprocessing pipeline utilities for RGB images.
 import cv2
 import tensorflow as tf
 import tensorflow_addons as tfa
+import numpy as np
+import matplotlib.pyplot as plt
+import io
+from itertools import product
+from sklearn.metrics import confusion_matrix
 
 
 class AdaptiveThresholding(tf.keras.layers.Layer):
@@ -234,6 +239,75 @@ class Grayscale(tf.keras.layers.Layer):
         """
 
         return super(Grayscale, self).get_config()
+
+
+class ConfusionMatrixCallback(tf.keras.callbacks.Callback):
+    """
+    A class to save confusion matrix for model's prediction at the end of every epoch
+
+    Methods:
+        call(input_batch)
+            Operations performed on layer call within a tensorflow.keras model
+        get_config()
+            Output configuration for the layer for the purpose of model saving
+    """
+
+    def __init__(self, validation_data=None, **kwargs):
+        """
+
+        Parameters:
+            validation_data: tf.data.Dataset (default None)
+                Validation dataset containing (sample, label) pairs
+            **kwargs:
+                Keyword arguments inherited from the tf.keras.callbacks.Callback class
+        """
+
+        super(ConfusionMatrixCallback, self).__init__()
+        self.validation_data = validation_data
+
+    def on_epoch_end(self, epoch, logs=None):
+        """Operations to perform at the end of the given epoch"""
+
+        x_val, y_val = self.validation_data
+        y_pred = self.model.predict(x_val)
+        predicted_categories = np.argmax(y_pred, axis=1)
+        cm = confusion_matrix(np.argmax(y_val, axis=1),
+                              predicted_categories,
+                              num_classes=len(y_pred))
+        # Set up the figure
+        plt.figure(figsize=(32, 32))
+        plt.imshow(cm, interpolation="nearest", cmap=plt.cm.Reds)
+        plt.title("Confusion matrix")
+        plt.colorbar()
+        tick_marks = np.arange(len(np.unique(np.argmax(y_val, axis=1))))
+        plt.xticks(tick_marks, np.unique(np.argmax(y_val, axis=1)), rotation=90)
+        plt.yticks(tick_marks, np.unique(np.argmax(y_val, axis=1)))
+
+        # White text for darker squares, otherwise black text
+        thresh = cm.max() / 2.
+        for i, j in product(range(cm.shape[0]), range(cm.shape[1])):
+            plt.text(j, i, format(cm[i, j], "d"),
+                     horizontalalignment="center",
+                     color="white" if cm[i, j] > thresh else "black")
+
+        # Finalize the figure
+        plt.tight_layout()
+        plt.ylabel("True label")
+        plt.xlabel("Predicted label")
+
+        # Save confusion matrix to TensorBoard log directory
+        writer = tf.summary.create_file_writer(self.model.log_dir)
+        with writer.as_default():
+            fig = plt.gcf()
+            buf = io.BytesIO()
+            plt.savefig(buf, format="png")
+            plt.close()
+            buf.seek(0)
+            image = tf.image.decode_png(buf.getvalue(), channels=4)
+            image = tf.expand_dims(image, 0)
+            tf.summary.image(f"Confusion Matrix/epoch-{epoch}", image, step=epoch)
+
+        buf.close()
 
 
 def image_augmentation(seed=123, rot_factor=0.15,

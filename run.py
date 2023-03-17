@@ -44,10 +44,11 @@ import json
 import tensorflow as tf
 import tensorflow_addons as tfa
 import utils
+from sklearn.metrics import confusion_matrix
 from collect_dataset import collect_data
 from showcase_collect_preprocessing import showcase_preprocessing
 from showcase_model import showcase_model
-from model.preprocessing import Grayscale, AdaptiveThresholding, Blurring, image_augmentation
+from model.preprocessing import Grayscale, AdaptiveThresholding, Blurring, image_augmentation, ConfusionMatrixCallback
 from model.model import build_model, build_preprocessing
 
 parser = argparse.ArgumentParser(allow_abbrev=False)
@@ -252,6 +253,10 @@ def main(args):
             tb_callback = tf.keras.callbacks.TensorBoard(log_dir=tb_path,
                                                          histogram_freq=1)
             callbacks.append(tb_callback)
+
+            # Add functionality to save log confusion matrices
+            cm_callback = ConfusionMatrixCallback(validation_data=(test_images))
+            callbacks.append(cm_callback)
 
         # Early stopping callback (optional, default is to include)
         if not args.disable_early_stopping:
