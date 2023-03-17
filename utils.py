@@ -194,18 +194,22 @@ def setup_folders(script_directory, gestures_list, amount_per_gesture):
 
         # Create a subfolder per each gesture if it does not exist yet and add it to paths
         new = os.path.join(data_dir, gesture)
+        new_image = False if os.path.exists(new) else True
         new_folder(new)
         paths[gesture] = new
 
         # If the subfolder exists, make sure that the ordering is correct and
         # shift it if any skips are present
         # (e.g. "A_1.jpg", "A_2.jpg", ... instead of "A_1.jpg", "A_3.jpg", ...)
-        repair_padding(new)
+        if not new_image:
+            repair_padding(new)
 
-        # Since the directory is now correctly sorted by padding, we can read the current amounts
-        files = os.listdir(new)
-        files.sort(key=lambda file: int(re.split(r"[_|.]", file)[1]))
-        current_amount[gesture] = 0 if not files else int(re.split(r"[_|.]", files[-1])[1])
+            # Since the directory is now correctly sorted by padding, we can read the current amounts
+            files = os.listdir(new)
+            files.sort(key=lambda file: int(re.split(r"[_|.]", file)[1]))
+            current_amount[gesture] = 0 if not files else int(re.split(r"[_|.]", files[-1])[1])
+        else:
+            current_amount[gesture] = 0
 
         # Create a dummy example image for the current gesture if it does not have an example image yet
         new = os.path.join(example_dir, gesture + ".jpg")
