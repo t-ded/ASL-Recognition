@@ -1,0 +1,67 @@
+Preprocessing pipeline:
+Model: "preprocessing_pipeline"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ preprocessing_input (InputL  [(None, 196, 196, 3)]    0         
+ ayer)                                                           
+                                                                 
+ grayscale (Grayscale)       (None, 196, 196, 1)       0         
+                                                                 
+ blurring (Blurring)         (None, 196, 196, 1)       0         
+                                                                 
+ adaptive_thresholding (Adap  (None, 196, 196, 1)      0         
+ tiveThresholding)                                               
+                                                                 
+ rescaling (Rescaling)       (None, 196, 196, 1)       0         
+                                                                 
+=================================================================
+Total params: 0
+Trainable params: 0
+Non-trainable params: 0
+_________________________________________________________________
+
+
+Trainable summary:
+Model: "trainable_layers"
+_________________________________________________________________
+ Layer (type)                Output Shape              Param #   
+=================================================================
+ trainable_input (InputLayer  [(None, 196, 196, 1)]    0         
+ )                                                               
+                                                                 
+ conv2d (Conv2D)             (None, 66, 66, 64)        640       
+                                                                 
+ average_pooling2d (AverageP  (None, 33, 33, 64)       0         
+ ooling2D)                                                       
+                                                                 
+ conv2d_1 (Conv2D)           (None, 11, 11, 64)        36928     
+                                                                 
+ average_pooling2d_1 (Averag  (None, 5, 5, 64)         0         
+ ePooling2D)                                                     
+                                                                 
+ flatten (Flatten)           (None, 1600)              0         
+                                                                 
+ dense (Dense)               (None, 128)               204928    
+                                                                 
+ softmax_output (Dense)      (None, 48)                6192      
+                                                                 
+=================================================================
+Total params: 248,688
+Trainable params: 248,688
+Non-trainable params: 0
+_________________________________________________________________
+
+
+
+Training parameters: {'verbose': 1, 'epochs': 10, 'steps': 165}
+Final training accuracy: 0.9635233879089355
+Final validation accuracy: 0.7842504978179932
+Final training precision: 0.9680260419845581
+Final validation precision: 0.8009803891181946
+Final training recall: 0.959301769733429
+Final validation recall: 0.7751423120498657
+Final training f1_score: 
+0.9634740352630615
+Final validation f1_score: 
+0.7853320240974426

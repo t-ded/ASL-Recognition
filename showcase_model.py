@@ -138,6 +138,7 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
                 # Check validity and avoid mirroring if frame is present
                 if not ret:
                     print("There has been a problem retrieving your frame")
+                    print("Try adjusting the camera number in specification of cap (default 0)")
                     break
                 frame = cv2.flip(frame, 1)
 
