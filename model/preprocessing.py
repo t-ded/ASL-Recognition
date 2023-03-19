@@ -252,10 +252,15 @@ class ConfusionMatrixCallback(tf.keras.callbacks.Callback):
             Output configuration for the layer for the purpose of model saving
     """
 
-    def __init__(self, validation_data=None, **kwargs):
+    def __init__(self, writer, gesture_list,
+                 validation_data=None, **kwargs):
         """
 
         Parameters:
+            writer: tf.SummaryWriter
+                TensorFlow summary writer with the designated log dir for this callback
+            gesture_list: list of str (default None)
+                List of gestures to put on the axes
             validation_data: tf.data.Dataset (default None)
                 Validation dataset containing (sample, label) pairs
             **kwargs:
@@ -263,49 +268,68 @@ class ConfusionMatrixCallback(tf.keras.callbacks.Callback):
         """
 
         super(ConfusionMatrixCallback, self).__init__()
+        self.gesture_list = gesture_list
         self.validation_data = validation_data
+        self.writer = writer
 
-    def on_epoch_end(self, epoch, logs=None):
-        """Operations to perform at the end of the given epoch"""
+    def plot_confusion_matrix(self, cm):
+        """
+        Create figure for the given confusion matrix
 
-        x_val, y_val = self.validation_data
-        y_pred = self.model.predict(x_val)
-        predicted_categories = np.argmax(y_pred, axis=1)
-        cm = confusion_matrix(np.argmax(y_val, axis=1),
-                              predicted_categories,
-                              num_classes=len(y_pred))
+        Parameters:
+            cm: numpy.ndarray
+                The given confusion matrix to plot
+
+        Returns:
+            figure: matplotlib.pyplot figure
+        """
+
         # Set up the figure
-        plt.figure(figsize=(32, 32))
+        figure = plt.figure(figsize=(28, 28))
         plt.imshow(cm, interpolation="nearest", cmap=plt.cm.Reds)
-        plt.title("Confusion matrix")
-        plt.colorbar()
-        tick_marks = np.arange(len(np.unique(np.argmax(y_val, axis=1))))
-        plt.xticks(tick_marks, np.unique(np.argmax(y_val, axis=1)), rotation=90)
-        plt.yticks(tick_marks, np.unique(np.argmax(y_val, axis=1)))
+        plt.colorbar(shrink=0.75).ax.tick_params(labelsize=18)
+
+        # Set up axes
+        tick_marks = np.arange(len(np.unique(self.gesture_list)))
+        plt.xticks(tick_marks, self.gesture_list, rotation=90, fontsize=20)
+        plt.yticks(tick_marks, self.gesture_list, fontsize=20)
 
         # White text for darker squares, otherwise black text
         thresh = cm.max() / 2.
         for i, j in product(range(cm.shape[0]), range(cm.shape[1])):
-            plt.text(j, i, format(cm[i, j], "d"),
+            plt.text(j, i, f"{cm[i, j]:.2f}",
                      horizontalalignment="center",
                      color="white" if cm[i, j] > thresh else "black")
 
         # Finalize the figure
+        plt.ylabel("True label", fontsize=30)
+        plt.xlabel("Predicted label", fontsize=30)
         plt.tight_layout()
-        plt.ylabel("True label")
-        plt.xlabel("Predicted label")
+
+        return figure
+
+    def on_epoch_end(self, epoch, logs=None):
+        """Operations to perform at the end of the given epoch"""
+
+        # Compute the confusion matrix per batch
+        y_val = np.concatenate([np.argmax(y, axis=1) for x, y in self.validation_data], axis=0)
+        y_pred = np.argmax(self.model.predict(self.validation_data), axis=1)
+        cm = confusion_matrix(y_val, y_pred,
+                              normalize="true")
+
+        # Create the figure using previously created function
+        figure = self.plot_confusion_matrix(cm)
 
         # Save confusion matrix to TensorBoard log directory
-        writer = tf.summary.create_file_writer(self.model.log_dir)
-        with writer.as_default():
-            fig = plt.gcf()
+        with self.writer.as_default():
             buf = io.BytesIO()
             plt.savefig(buf, format="png")
-            plt.close()
+            plt.close(figure)
             buf.seek(0)
             image = tf.image.decode_png(buf.getvalue(), channels=4)
             image = tf.expand_dims(image, 0)
-            tf.summary.image(f"Confusion Matrix/epoch-{epoch}", image, step=epoch)
+            tf.summary.image("epoch_confusion_matrix", image, step=epoch)
+            plt.close("all")
 
         buf.close()
 

@@ -44,7 +44,6 @@ import json
 import tensorflow as tf
 import tensorflow_addons as tfa
 import utils
-from sklearn.metrics import confusion_matrix
 from collect_dataset import collect_data
 from showcase_collect_preprocessing import showcase_preprocessing
 from showcase_model import showcase_model
@@ -73,7 +72,7 @@ train_settings.add_argument("-aug", "--augmentation", action="store_true", help=
 
 # Specify the hyperparameters if the json file was not given
 hyperparameters = parser.add_argument_group("Hyperparameters")
-hyperparameters.add_argument("-bs", "--batch_size", default=256, type=int, help="Batch size")
+hyperparameters.add_argument("-bs", "--batch_size", default=128, type=int, help="Batch size")
 hyperparameters.add_argument("-e", "--epochs", default=10, type=int, help="Number of epochs")
 hyperparameters.add_argument("-opt", "--optimizer", default="adam", choices=["adam", "SGD"], help="Optimizer for training")
 hyperparameters.add_argument("-lr", "--learning_rate", default=0.01, type=float, help="Starting learning rate")
@@ -255,7 +254,10 @@ def main(args):
             callbacks.append(tb_callback)
 
             # Add functionality to save log confusion matrices
-            cm_callback = ConfusionMatrixCallback(validation_data=(test_images))
+            writer = tf.summary.create_file_writer(logdir=tb_path + "/cm")
+            cm_callback = ConfusionMatrixCallback(writer,
+                                                  gesture_list=gestures,
+                                                  validation_data=test_images)
             callbacks.append(cm_callback)
 
         # Early stopping callback (optional, default is to include)
