@@ -77,6 +77,7 @@ hyperparameters.add_argument("-e", "--epochs", default=10, type=int, help="Numbe
 hyperparameters.add_argument("-opt", "--optimizer", default="adam", choices=["adam", "SGD"], help="Optimizer for training")
 hyperparameters.add_argument("-lr", "--learning_rate", default=0.01, type=float, help="Starting learning rate")
 hyperparameters.add_argument("-mom", "--momentum", default=0.9, type=float, help="If optimizer is set to SGD, initialize the optimizer with Nesterov momentum of this value")
+hyperparameters.add_argument("-wd", "--weight_decay", default=0.001, type=float, help="If given, set the weight decay for the optimizer to this value")
 hyperparameters.add_argument("-reg", "--regularization", default=None, choices=["l1", "l2"], help="Regularization for the loss function")
 hyperparameters.add_argument("--seed", default=123, type=int, help="Random seed for operations including randomness (e.g. shuffling)")
 hyperparameters.add_argument("--split", default=0.2, type=float, help="Portion of the full dataset to reserve for validation")
@@ -303,11 +304,13 @@ def main(args):
         # Compile the modile according to given instructions
         if args.optimizer == "adam":
             optimizer = tf.keras.optimizers.Adam(learning_rate=args.learning_rate,
+                                                 weight_decay=args.weight_decay,
                                                  jit_compile=False)
         elif args.optimizer == "SGD":
             optimizer = tf.keras.optimizers.experimental.SGD(learning_rate=args.learning_rate,
                                                              nesterov=True,
                                                              momentum=args.momentum,
+                                                             weight_decay=args.weight_decay,
                                                              jit_compile=False)
         model.compile(optimizer=optimizer,
                       loss=tf.keras.losses.CategoricalCrossentropy(),
