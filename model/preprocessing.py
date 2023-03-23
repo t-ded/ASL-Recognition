@@ -231,7 +231,7 @@ class Grayscale(tf.keras.layers.Layer):
                 The dataset on which the tfa.image.rgb_to_grayscale function was applied
         """
 
-        return tf.image.rgb_to_grayscale(input_batch)
+        return tf.cast(tf.image.rgb_to_grayscale(input_batch), tf.uint8)
 
     def get_config(self):
         """
