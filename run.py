@@ -66,7 +66,7 @@ train_settings = parser.add_argument_group("Training settings")
 train_settings.add_argument("--experiment", default=None, type=int,
                             help="Number of this experiment (the settings will be saved in the respective newly created folder or loaded from an existing folder)")
 train_settings.add_argument("-tb", "--tensorboard", action="store_true", help="If given, set up TensorBoard callback for model training")
-train_settings.add_argument("-des", "--disable_early_stopping", action="store_false", help="If given, do not set up EarlyStopping callback for model training")
+train_settings.add_argument("-des", "--disable_early_stopping", action="store_true", help="If given, do not set up EarlyStopping callback for model training")
 train_settings.add_argument("-aug", "--augmentation", action="store_true", help="If given, perform image augmentation on the training dataset")
 # TODO - Decide if this is a good approach # train_settings.add_argument("-efnet", "--efficient_net", action="store_true", help="If given, omit training of a new model and only finetune the output layers of the EfficientNetV2B0")
 
@@ -270,7 +270,7 @@ def main(args):
                                                            mode="auto",
                                                            baseline=0.3,
                                                            restore_best_weights=True,
-                                                           start_from_epoch=5)
+                                                           start_from_epoch=10)
             callbacks.append(es_callback)
 
         # Set the default preprocessing pipeline if not specified
@@ -337,7 +337,6 @@ def main(args):
         print(model.summary())
         utils.indent(n=2)
         print("Model training:")
-
         # Save the initial weights as specified in the "checkpoint_path" format
         model.save_weights(cp_path.format(epoch=0))
 
@@ -352,7 +351,7 @@ def main(args):
                    overwrite=True)
 
         # Save the model architecture in a text file as well for easy access
-        with open(save_dir + "\\model_summary.txt", "a+") as file:
+        with open(os.path.join(save_dir, "model_summary.txt"), "a+") as file:
             file.write("Preprocessing pipeline:\n")
             preprocessing.summary(print_fn=lambda x: file.write(x + "\n"))
             file.write("\n\n")
