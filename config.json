@@ -8,7 +8,7 @@
     "Model": {
         "Current model": "model/current",
         "Model experiments": "model/experiments",
-        "Default architecture": "I,C-f64-k3-s3,P-ta-p2-s2,C-f64-k3-s3,P-ta-p2-s2,F,H-128,O",
+        "Default architecture": "I,C-f64-k3-s3,P-ta-p2-s2,C-f64-k3-s3,P-ta-p2-s2,F,H-512,O",
         "Default preprocessing": "I,G,B-tm-k7,T-tg-b3-c(3),R"
     },
     "General parameters": {

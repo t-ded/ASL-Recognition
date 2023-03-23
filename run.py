@@ -77,7 +77,7 @@ hyperparameters.add_argument("-e", "--epochs", default=10, type=int, help="Numbe
 hyperparameters.add_argument("-opt", "--optimizer", default="adam", choices=["adam", "SGD"], help="Optimizer for training")
 hyperparameters.add_argument("-lr", "--learning_rate", default=0.01, type=float, help="Starting learning rate")
 hyperparameters.add_argument("-mom", "--momentum", default=0.9, type=float, help="If optimizer is set to SGD, initialize the optimizer with Nesterov momentum of this value")
-hyperparameters.add_argument("-wd", "--weight_decay", default=0.001, type=float, help="If given, set the weight decay for the optimizer to this value")
+hyperparameters.add_argument("-wd", "--weight_decay", default=0.0005, type=float, help="If given, set the weight decay for the optimizer to this value")
 hyperparameters.add_argument("-reg", "--regularization", default=None, choices=["l1", "l2"], help="Regularization for the loss function")
 hyperparameters.add_argument("--seed", default=123, type=int, help="Random seed for operations including randomness (e.g. shuffling)")
 hyperparameters.add_argument("--split", default=0.2, type=float, help="Portion of the full dataset to reserve for validation")
@@ -165,7 +165,7 @@ def main(args):
         if args.experiment == -1:
 
             # Ask for confirmation in case the current folder already has some saved model in it
-            if len(next(os.walk(current_dir))[2]):
+            if len(list(os.walk(current_dir))):
                 print("The folder with current model layout already contains some files.",
                       "Continuing to save the result of the current training procedure",
                       "might result in loss of the previous model.")
@@ -229,7 +229,7 @@ def main(args):
 
         if args.augmentation:
             augmentation_model = image_augmentation(seed=args.seed)
-            train_images = train_images.map(lambda x, y: (augmentation_model(x), y),
+            train_images = train_images.map(lambda x, y: (augmentation_model(x, training=True), y),
                                             num_parallel_calls=tf.data.AUTOTUNE).prefetch(buffer_size=tf.data.AUTOTUNE)
         else:
             train_images = train_images.prefetch(buffer_size=tf.data.AUTOTUNE)
@@ -263,11 +263,14 @@ def main(args):
 
         # Early stopping callback (optional, default is to include)
         if not args.disable_early_stopping:
-            es_callback = tf.keras.callbacks.EarlyStopping(monitor="val_f1_score",
-                                                           min_delta=0.01,
-                                                           patience=2,
+            es_callback = tf.keras.callbacks.EarlyStopping(monitor="val_accuracy",
+                                                           min_delta=0.025,
+                                                           patience=3,
                                                            verbose=1,
-                                                           mode="auto")
+                                                           mode="auto",
+                                                           baseline=0.3,
+                                                           restore_best_weights=True,
+                                                           start_from_epoch=5)
             callbacks.append(es_callback)
 
         # Set the default preprocessing pipeline if not specified

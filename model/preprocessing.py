@@ -334,7 +334,7 @@ class ConfusionMatrixCallback(tf.keras.callbacks.Callback):
         buf.close()
 
 
-def image_augmentation(seed=123, rot_factor=0.15,
+def image_augmentation(seed=123, rot_factor=0.05,
                        height_factor=0.1, width_factor=0.1):
     """
     Build a data augmentation tf.keras.Sequential model
@@ -342,7 +342,7 @@ def image_augmentation(seed=123, rot_factor=0.15,
     Parameters:
         seed: int (default 123)
             Seed for the random operations
-        rot_factor: float (default 0.15)
+        rot_factor: float (default 0.05)
             Rotation factor (as a fraction of 2 Pi) to use for rotation bounds
         height_factor: float (default 0.1)
             Factor which to use for height shift bounds
