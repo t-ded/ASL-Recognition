@@ -264,7 +264,7 @@ def main(args):
         # Early stopping callback (optional, default is to include)
         if not args.disable_early_stopping:
             es_callback = tf.keras.callbacks.EarlyStopping(monitor="val_accuracy",
-                                                           min_delta=0.025,
+                                                           min_delta=0.005,
                                                            patience=3,
                                                            verbose=1,
                                                            mode="auto",
