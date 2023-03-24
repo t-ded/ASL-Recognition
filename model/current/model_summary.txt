@@ -39,6 +39,8 @@ _________________________________________________________________
                                                                  
  dense (Dense)               (None, 512)               819712    
                                                                  
+ dropout (Dropout)           (None, 512)               0         
+                                                                 
  softmax_output (Dense)      (None, 49)                25137     
                                                                  
 =================================================================
@@ -49,14 +51,14 @@ _________________________________________________________________
 
 
 
-Training parameters: {'verbose': 1, 'epochs': 40, 'steps': 195}
-Final training accuracy: 1.0
-Final validation accuracy: 0.9552884697914124
-Final training precision: 1.0
-Final validation precision: 0.9594900012016296
-Final training recall: 1.0
-Final validation recall: 0.9527243375778198
+Training parameters: {'verbose': 1, 'epochs': 35, 'steps': 230}
+Final training accuracy: 0.9745237827301025
+Final validation accuracy: 0.9317007064819336
+Final training precision: 0.9788154363632202
+Final validation precision: 0.941990852355957
+Final training recall: 0.9696598649024963
+Final validation recall: 0.9257143139839172
 Final training f1_score: 
-0.9795918464660645
+0.9745455384254456
 Final validation f1_score: 
-0.9359806776046753
+0.9309341311454773
