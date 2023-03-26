@@ -80,7 +80,7 @@ hyperparameters.add_argument("-mom", "--momentum", default=0.9, type=float, help
 hyperparameters.add_argument("-wd", "--weight_decay", default=0.0005, type=float, help="If given, set the weight decay for the optimizer to this value")
 hyperparameters.add_argument("-reg", "--regularization", default=None, choices=["l1", "l2"], help="Regularization for the loss function")
 hyperparameters.add_argument("--seed", default=123, type=int, help="Random seed for operations including randomness (e.g. shuffling)")
-hyperparameters.add_argument("--split", default=0.2, type=float, help="Portion of the full dataset to reserve for validation")
+hyperparameters.add_argument("--split", default=0.3, type=float, help="Portion of the full dataset to reserve for validation")
 
 # Specify the architecture for the given experiment if training procedure is set
 architecture = parser.add_argument_group("Architecture")
@@ -264,8 +264,8 @@ def main(args):
         # Early stopping callback (optional, default is to include)
         if not args.disable_early_stopping:
             es_callback = tf.keras.callbacks.EarlyStopping(monitor="val_accuracy",
-                                                           min_delta=0.005,
-                                                           patience=3,
+                                                           min_delta=0.0025,
+                                                           patience=5,
                                                            verbose=1,
                                                            mode="auto",
                                                            baseline=0.3,
@@ -367,6 +367,10 @@ def main(args):
             file.write("Final validation recall: " + str(history.history["val_recall"][-1]) + "\n")
             file.write("Final training f1_score: " + "\n" + str(history.history["f1_score"][-1]) + "\n")
             file.write("Final validation f1_score: " + "\n" + str(history.history["val_f1_score"][-1]) + "\n")
+            file.write("\n\n")
+            file.write("Command line arguments: " + "\n")
+            for arg in vars(args):
+                file.write(arg + ": " + getattr(args, arg) + "\n")
 
     # Demonstrate the image taking process
     elif args.showcase:

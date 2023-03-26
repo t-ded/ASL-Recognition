@@ -51,14 +51,14 @@ _________________________________________________________________
 
 
 
-Training parameters: {'verbose': 1, 'epochs': 35, 'steps': 230}
-Final training accuracy: 0.9745237827301025
-Final validation accuracy: 0.9317007064819336
-Final training precision: 0.9788154363632202
-Final validation precision: 0.941990852355957
-Final training recall: 0.9696598649024963
-Final validation recall: 0.9257143139839172
+Training parameters: {'verbose': 1, 'epochs': 50, 'steps': 460}
+Final training accuracy: 0.9804081916809082
+Final validation accuracy: 0.9454421997070312
+Final training precision: 0.9826737642288208
+Final validation precision: 0.9525909423828125
+Final training recall: 0.9780611991882324
+Final validation recall: 0.9404081702232361
 Final training f1_score: 
-0.9745455384254456
+0.9804091453552246
 Final validation f1_score: 
-0.9309341311454773
+0.9450747966766357
