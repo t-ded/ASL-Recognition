@@ -370,7 +370,7 @@ def main(args):
             file.write("\n\n")
             file.write("Command line arguments: " + "\n")
             for arg in vars(args):
-                file.write(arg + ": " + getattr(args, arg) + "\n")
+                file.write(arg + ": " + str(getattr(args, arg)) + "\n")
 
     # Demonstrate the image taking process
     elif args.showcase:

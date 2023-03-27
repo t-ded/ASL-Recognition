@@ -51,14 +51,38 @@ _________________________________________________________________
 
 
 
-Training parameters: {'verbose': 1, 'epochs': 50, 'steps': 460}
-Final training accuracy: 0.9804081916809082
-Final validation accuracy: 0.9454421997070312
-Final training precision: 0.9826737642288208
-Final validation precision: 0.9525909423828125
-Final training recall: 0.9780611991882324
-Final validation recall: 0.9404081702232361
+Training parameters: {'verbose': 1, 'epochs': 45, 'steps': 403}
+Final training accuracy: 0.9361834526062012
+Final validation accuracy: 0.9394159317016602
+Final training precision: 0.9500758647918701
+Final validation precision: 0.9515904784202576
+Final training recall: 0.9245238900184631
+Final validation recall: 0.9306185245513916
 Final training f1_score: 
-0.9804091453552246
+0.9361684918403625
 Final validation f1_score: 
-0.9450747966766357
+0.9393420219421387
+
+
+Command line arguments: 
+config_dir: 
+collect: False
+preprocess: False
+train: True
+showcase: False
+predict: False
+experiment: 16
+tensorboard: True
+disable_early_stopping: True
+augmentation: False
+batch_size: 64
+epochs: 45
+optimizer: SGD
+learning_rate: 0.005
+momentum: 0.95
+weight_decay: 0.0015
+regularization: None
+seed: 123
+split: 0.3
+architecture: I,C-f64-k3-s3,P-tm-p2-s2,C-f64-k3-s3,P-tm-p2-s2,F,H-512,D-0.5,O
+preprocessing_layers: I,G,R
