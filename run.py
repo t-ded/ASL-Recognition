@@ -76,7 +76,8 @@ hyperparameters.add_argument("-bs", "--batch_size", default=128, type=int, help=
 hyperparameters.add_argument("-e", "--epochs", default=10, type=int, help="Number of epochs")
 hyperparameters.add_argument("-opt", "--optimizer", default="adam", choices=["adam", "SGD"], help="Optimizer for training")
 hyperparameters.add_argument("-lr", "--learning_rate", default=0.01, type=float, help="Starting learning rate")
-hyperparameters.add_argument("-lrd", "--lr_decay", default=1, type=float, help="If given, this constant will be used for exponential learning rate decay after every epoch")
+hyperparameters.add_argument("-lrd", "--lr_decay", default=1, type=float, help="If given, this constant will be used for exponential learning rate decay after every --lr_decay_iterations iterations")
+hyperparameters.add_argument("-lrdit", "--lr_decay_iterations", default=10000, type=int, help="Specify the number of iterations that will substite one step for learning rate decay")
 hyperparameters.add_argument("-mom", "--momentum", default=0, type=float, help="If optimizer is set to SGD, initialize the optimizer with Nesterov momentum of this value if given")
 hyperparameters.add_argument("-wd", "--weight_decay", default=0, type=float, help="If given, set the weight decay for the optimizer to this value")
 hyperparameters.add_argument("-ls", "--label_smoothing", default=0, type=float, help="If given, set the label smoothing parameter to this value")
@@ -305,19 +306,36 @@ def main(args):
                                outputs=trainable(preprocessing.output),
                                name="full_model")
 
-        # Compile the modile according to given instructions
+        # Set up the learning rate exponential decay schedule if the decay rate given
+        lr = args.learning_rate
+        wd = args.weight_decay
+        if 0 < args.lr_decay < 1:
+            lr = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=lr,
+                                                                decay_steps=args.lr_decay_iterations,
+                                                                decay_rate=args.lr_decay)
+
+            # If applying learning rate decay schedule alongside weight decay,
+            # the weight decay parameter also needs to be updated accordingly
+            wd = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=wd,
+                                                                decay_steps=args.lr_decay_iterations,
+                                                                decay_rate=args.lr_decay)
+
+        # Compile the optimizer according to given instructions
         if args.optimizer == "adam":
-            optimizer = tf.keras.optimizers.Adam(learning_rate=args.learning_rate,
-                                                 weight_decay=args.weight_decay,
-                                                 jit_compile=False)
+            optimizer = tf.keras.optimizers.AdamW(learning_rate=lr,
+                                                  weight_decay=wd,
+                                                  jit_compile=False)
         elif args.optimizer == "SGD":
-            optimizer = tf.keras.optimizers.experimental.SGD(learning_rate=args.learning_rate,
-                                                             nesterov=True,
-                                                             momentum=args.momentum,
-                                                             weight_decay=args.weight_decay,
-                                                             jit_compile=False)
+            optimizer = tfa.optimizers.SGDW(learning_rate=lr,
+                                            momentum=args.momentum,
+                                            nesterov=True,
+                                            weight_decay=wd,
+                                            jit_compile=False)
+        optimizer.exclude_from_weight_decay(var_names=["bias"])  # Overfitting happens through weights
+
+        # Compile the model with cross-entropy loss, selected metrics and set up optimizer
         model.compile(optimizer=optimizer,
-                      loss=tf.keras.losses.CategoricalCrossentropy(),
+                      loss=tf.keras.losses.CategoricalCrossentropy(label_smoothing=args.label_smoothing),
                       metrics=[tf.keras.metrics.CategoricalAccuracy(name="accuracy"),
                                tf.keras.metrics.Recall(name="recall"),
                                tf.keras.metrics.Precision(name="precision"),
