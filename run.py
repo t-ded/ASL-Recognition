@@ -66,7 +66,7 @@ train_settings = parser.add_argument_group("Training settings")
 train_settings.add_argument("--experiment", default=None, type=int,
                             help="Number of this experiment (the settings will be saved in the respective newly created folder or loaded from an existing folder)")
 train_settings.add_argument("-tb", "--tensorboard", action="store_true", help="If given, set up TensorBoard callback for model training")
-train_settings.add_argument("-des", "--disable_early_stopping", action="store_true", help="If given, do not set up EarlyStopping callback for model training")
+train_settings.add_argument("-es", "--early_stopping", default="loss", choices=["disable", "loss", "accuracy", "f1_score", "recall", "precision"], help="Choice of the metric to monitor by the EarlyStopping callback during model training")
 train_settings.add_argument("-aug", "--augmentation", action="store_true", help="If given, perform image augmentation on the training dataset")
 # TODO - Decide if this is a good approach # train_settings.add_argument("-efnet", "--efficient_net", action="store_true", help="If given, omit training of a new model and only finetune the output layers of the EfficientNetV2B0")
 
@@ -262,8 +262,8 @@ def main(args):
             callbacks.append(cm_callback)
 
         # Early stopping callback (optional, default is to include)
-        if not args.disable_early_stopping:
-            es_callback = tf.keras.callbacks.EarlyStopping(monitor="val_accuracy",
+        if args.early_stopping != "disable":
+            es_callback = tf.keras.callbacks.EarlyStopping(monitor="val_" + args.early_stopping,
                                                            min_delta=0.0025,
                                                            patience=5,
                                                            verbose=1,
