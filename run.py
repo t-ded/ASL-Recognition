@@ -79,6 +79,7 @@ hyperparameters.add_argument("-lr", "--learning_rate", default=0.01, type=float,
 hyperparameters.add_argument("-lrd", "--lr_decay", default=1, type=float, help="If given, this constant will be used for exponential learning rate decay after every epoch")
 hyperparameters.add_argument("-mom", "--momentum", default=0, type=float, help="If optimizer is set to SGD, initialize the optimizer with Nesterov momentum of this value if given")
 hyperparameters.add_argument("-wd", "--weight_decay", default=0, type=float, help="If given, set the weight decay for the optimizer to this value")
+hyperparameters.add_argument("-ls", "--label_smoothing", default=0, type=float, help="If given, set the label smoothing parameter to this value")
 hyperparameters.add_argument("--seed", default=123, type=int, help="Random seed for operations including randomness (e.g. shuffling)")
 hyperparameters.add_argument("--split", default=0.3, type=float, help="Portion of the full dataset to reserve for validation")
 
