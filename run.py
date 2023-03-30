@@ -76,9 +76,9 @@ hyperparameters.add_argument("-bs", "--batch_size", default=128, type=int, help=
 hyperparameters.add_argument("-e", "--epochs", default=10, type=int, help="Number of epochs")
 hyperparameters.add_argument("-opt", "--optimizer", default="adam", choices=["adam", "SGD"], help="Optimizer for training")
 hyperparameters.add_argument("-lr", "--learning_rate", default=0.01, type=float, help="Starting learning rate")
-hyperparameters.add_argument("-mom", "--momentum", default=0.9, type=float, help="If optimizer is set to SGD, initialize the optimizer with Nesterov momentum of this value")
-hyperparameters.add_argument("-wd", "--weight_decay", default=0.0005, type=float, help="If given, set the weight decay for the optimizer to this value")
-hyperparameters.add_argument("-reg", "--regularization", default=None, choices=["l1", "l2"], help="Regularization for the loss function")
+hyperparameters.add_argument("-lrd", "--lr_decay", default=None, type=float, help="If given, this constant will be used for exponential learning rate decay after every epoch")
+hyperparameters.add_argument("-mom", "--momentum", default=None, type=float, help="If optimizer is set to SGD, initialize the optimizer with Nesterov momentum of this value if given")
+hyperparameters.add_argument("-wd", "--weight_decay", default=None, type=float, help="If given, set the weight decay for the optimizer to this value")
 hyperparameters.add_argument("--seed", default=123, type=int, help="Random seed for operations including randomness (e.g. shuffling)")
 hyperparameters.add_argument("--split", default=0.3, type=float, help="Portion of the full dataset to reserve for validation")
 
@@ -264,7 +264,7 @@ def main(args):
         # Early stopping callback (optional, default is to include)
         if args.early_stopping != "disable":
             es_callback = tf.keras.callbacks.EarlyStopping(monitor="val_" + args.early_stopping,
-                                                           min_delta=0.0025,
+                                                           min_delta=0.001,
                                                            patience=5,
                                                            verbose=1,
                                                            mode="auto",
