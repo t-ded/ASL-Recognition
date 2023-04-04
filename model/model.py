@@ -57,6 +57,7 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
                     - Flatten: F
                     - Dropout (rate): D-0.5
                     - Dense (units): H-100
+                    - Batch normalization: B
                     - Output: O
 
     Returns:
@@ -115,7 +116,7 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
     layers = instructions.split(",")
 
     # Chain the layers based on the instructrions
-    for layer in layers:
+    for i, layer in enumerate(layers):
 
         # Empty instruction
         if not layer:
@@ -128,11 +129,18 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
         # Set up the name of the layer
         layer_name = layer[0]
 
-        if len(layer) == 1 and layer_name not in ["I", "O", "F"]:
+        if len(layer) == 1 and layer_name not in ["I", "O", "F", "B"]:
             wrn = "\nOne of the hidden layers does not have specified parameters.\n"
             wrn += "Omitting the layer and continuing the process.\n"
             warnings.warn(wrn)
             continue
+
+        # Adjust the current layer's output if the following layer is BatchNormalization
+        use_bias = True
+        activation = tf.nn.relu
+        if layers[i + 1][0] == "B":
+            use_bias = False
+            activation = None
 
         # Continue the process based on the type of the layer
 
@@ -169,13 +177,15 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
                 hidden = tf.keras.layers.Conv1D(filters=int(filters),
                                                 kernel_size=int(kernel_size),
                                                 strides=int(strides),
-                                                activation=tf.nn.relu)(hidden)
+                                                activation=activation,
+                                                use_bias=use_bias)(hidden)
                 flatten_flag = 0
             else:
                 hidden = tf.keras.layers.Conv2D(filters=int(filters),
                                                 kernel_size=int(kernel_size),
                                                 strides=int(strides),
-                                                activation=tf.nn.relu)(hidden)
+                                                activation=activation,
+                                                use_bias=use_bias)(hidden)
 
         # Pooling layer
         elif layer_name == "P":
@@ -277,13 +287,19 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
                 flatten_flag = 1
 
             hidden = tf.keras.layers.Dense(int(match.group(1)),
-                                           activation=tf.nn.relu)(hidden)
+                                           activation=activation,
+                                           use_bias=use_bias)(hidden)
 
         # Flatten layer
         elif layer_name == "F":
 
             flatten_flag = 1
             hidden = tf.keras.layers.Flatten()(hidden)
+
+        # Batch normalization layer
+        elif layer_name == "B":
+
+            hidden = tf.keras.layers.BatchNormalization()(hidden)
 
         # Output layer
         elif layer_name == "O":

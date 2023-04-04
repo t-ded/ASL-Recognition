@@ -324,14 +324,14 @@ def main(args):
         if args.optimizer == "adam":
             optimizer = tf.keras.optimizers.AdamW(learning_rate=lr,
                                                   weight_decay=wd,
+                                                  exclude_from_weight_decay=["bias"],
                                                   jit_compile=False)
         elif args.optimizer == "SGD":
             optimizer = tfa.optimizers.SGDW(learning_rate=lr,
                                             momentum=args.momentum,
                                             nesterov=True,
                                             weight_decay=wd,
-                                            jit_compile=False)
-        optimizer.exclude_from_weight_decay(var_names=["bias"])  # Overfitting happens through weights
+                                            exclude_from_weight_decay=["bias"])
 
         # Compile the model with cross-entropy loss, selected metrics and set up optimizer
         model.compile(optimizer=optimizer,
