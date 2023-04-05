@@ -43,6 +43,7 @@ import datetime
 import json
 import tensorflow as tf
 import tensorflow_addons as tfa
+import keras_cv
 import utils
 from collect_dataset import collect_data
 from showcase_collect_preprocessing import showcase_preprocessing
@@ -67,7 +68,11 @@ train_settings.add_argument("--experiment", default=None, type=int,
                             help="Number of this experiment (the settings will be saved in the respective newly created folder or loaded from an existing folder)")
 train_settings.add_argument("-tb", "--tensorboard", action="store_true", help="If given, set up TensorBoard callback for model training")
 train_settings.add_argument("-es", "--early_stopping", default="loss", choices=["disable", "loss", "accuracy", "f1_score", "recall", "precision"], help="Choice of the metric to monitor by the EarlyStopping callback during model training")
-train_settings.add_argument("-aug", "--augmentation", action="store_true", help="If given, perform image augmentation on the training dataset")
+
+# Specify augmentation type and settings for RandAugment
+augmentation_settings = parser.add_argument_group("Augmentation settings")
+augmentation_settings.add_argument("-aug", "--augmentation", action="store_true", help="If given, perform image augmentation on the training dataset")
+augmentation_settings.add_argument("-raug", "--randaugment", default=None, type=str, help="If given (in m,n format), pass the training dataset through the RandAugment pipeline with parameters m ((0, 100) range), n (positive int)")
 # TODO - Decide if this is a good approach # train_settings.add_argument("-efnet", "--efficient_net", action="store_true", help="If given, omit training of a new model and only finetune the output layers of the EfficientNetV2B0")
 
 # Specify the hyperparameters if the json file was not given
@@ -229,10 +234,25 @@ def main(args):
                                                                                         validation_split=args.split,
                                                                                         subset="both")
 
+        # Apply given augmentation pipeline
         if args.augmentation:
             augmentation_model = image_augmentation(seed=args.seed)
             train_images = train_images.map(lambda x, y: (augmentation_model(x, training=True), y),
                                             num_parallel_calls=tf.data.AUTOTUNE).prefetch(buffer_size=tf.data.AUTOTUNE)
+
+        elif args.randaugment:
+            try:
+                randaugment_params = args.randaugment.split(",")
+                m, n = int(randaugment_params[0]), int(randaugment_params[1])
+                augmentation_model = keras_cv.layers.RandAugment(value_range=[0, 255],
+                                                                 augmentations_per_image=n,
+                                                                 magnitude=m / 100,
+                                                                 seed=args.seed)
+                train_images = train_images.map(lambda x, y: (augmentation_model(x), y),
+                                                num_parallel_calls=tf.data.AUTOTUNE).prefetch(buffer_size=tf.data.AUTOTUNE)
+            except ValueError:
+                print("Invalid input was given for the parameters of the RandAugment transformation, omitting augmentation and continuing the process.")
+
         else:
             train_images = train_images.prefetch(buffer_size=tf.data.AUTOTUNE)
         test_images = test_images.prefetch(buffer_size=tf.data.AUTOTUNE)

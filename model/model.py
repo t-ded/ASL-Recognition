@@ -58,6 +58,7 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
                     - Dropout (rate): D-0.5
                     - Dense (units): H-100
                     - Batch normalization: B
+                    - Global Pooling (type(t, one of average(a) or max (m))): G-ta
                     - Output: O
 
     Returns:
@@ -266,6 +267,35 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
                 continue
 
             hidden = tf.keras.layers.Dropout(rate)(hidden)
+
+        # Global pooling layer
+        elif layer_name == "G":
+
+            # Ensure the type of the pooling layer is specified
+            match = re.search(r"-t(\w)", layer)
+            if not match:
+                wrn = "\nThe type for the global pooling layer is not specified.\n"
+                wrn += "Omitting the layer and continuing the process.\n"
+                warnings.warn(wrn)
+                continue
+            pooling_type = match.group(1)
+
+            # Choose the correct type of the pooling layer and ensure it is valid
+            if pooling_type == "a":
+
+                hidden = tf.keras.layers.GlobalAveragePooling2D()(hidden)
+                flatten_flag = True
+
+            elif pooling_type == "m":
+
+                hidden = tf.keras.layers.GlobalMaxPool2D()(hidden)
+                flatten_flag = True
+
+            else:
+                wrn = "\nThe type for the pooling layer is not valid.\n"
+                wrn += "Omitting the layer and continuing the process.\n"
+                warnings.warn(wrn)
+                continue
 
         # Densely connected layer
         elif layer_name == "H":
