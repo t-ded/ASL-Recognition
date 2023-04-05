@@ -300,6 +300,7 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
         elif layer_name == "B":
 
             hidden = tf.keras.layers.BatchNormalization()(hidden)
+            hidden = tf.keras.layers.ReLU()(hidden)
 
         # Output layer
         elif layer_name == "O":
