@@ -139,9 +139,10 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
         # Adjust the current layer's output if the following layer is BatchNormalization
         use_bias = True
         activation = tf.nn.relu
-        if layers[i + 1][0] == "B":
-            use_bias = False
-            activation = None
+        if i < len(layers) - 1:
+            if layers[i + 1][0] == "B":
+                use_bias = False
+                activation = None
 
         # Continue the process based on the type of the layer
 
@@ -271,7 +272,7 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
         # Global pooling layer
         elif layer_name == "G":
 
-            # Ensure the type of the pooling layer is specified
+            # Ensure the type of the global pooling layer is specified
             match = re.search(r"-t(\w)", layer)
             if not match:
                 wrn = "\nThe type for the global pooling layer is not specified.\n"
@@ -280,7 +281,7 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
                 continue
             pooling_type = match.group(1)
 
-            # Choose the correct type of the pooling layer and ensure it is valid
+            # Choose the correct type of the global pooling layer and ensure it is valid
             if pooling_type == "a":
 
                 hidden = tf.keras.layers.GlobalAveragePooling2D()(hidden)
@@ -292,7 +293,7 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
                 flatten_flag = True
 
             else:
-                wrn = "\nThe type for the pooling layer is not valid.\n"
+                wrn = "\nThe type for the global pooling layer is not valid.\n"
                 wrn += "Omitting the layer and continuing the process.\n"
                 warnings.warn(wrn)
                 continue
