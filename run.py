@@ -237,7 +237,7 @@ def main(args):
         # Apply given augmentation pipeline
         if args.augmentation:
             augmentation_model = image_augmentation(seed=args.seed)
-            train_images = train_images.map(lambda x, y: (augmentation_model(x, training=True), y),
+            train_images = train_images.map(lambda x, y: (augmentation_model(x), y),
                                             num_parallel_calls=tf.data.AUTOTUNE).prefetch(buffer_size=tf.data.AUTOTUNE)
 
         elif args.randaugment:

@@ -35,33 +35,36 @@ _________________________________________________________________
  max_pooling2d_1 (MaxPooling  (None, 5, 5, 64)         0         
  2D)                                                             
                                                                  
+ batch_normalization (BatchN  (None, 5, 5, 64)         256       
+ ormalization)                                                   
+                                                                 
+ re_lu (ReLU)                (None, 5, 5, 64)          0         
+                                                                 
  flatten (Flatten)           (None, 1600)              0         
                                                                  
  dense (Dense)               (None, 512)               819712    
                                                                  
- dropout (Dropout)           (None, 512)               0         
-                                                                 
  softmax_output (Dense)      (None, 49)                25137     
                                                                  
 =================================================================
-Total params: 882,417
-Trainable params: 882,417
-Non-trainable params: 0
+Total params: 882,673
+Trainable params: 882,545
+Non-trainable params: 128
 _________________________________________________________________
 
 
 
-Training parameters: {'verbose': 1, 'epochs': 45, 'steps': 403}
-Final training accuracy: 0.9361834526062012
-Final validation accuracy: 0.9394159317016602
-Final training precision: 0.9500758647918701
-Final validation precision: 0.9515904784202576
-Final training recall: 0.9245238900184631
-Final validation recall: 0.9306185245513916
+Training parameters: {'verbose': 1, 'epochs': 40, 'steps': 101}
+Final training accuracy: 0.98398756980896
+Final validation accuracy: 0.9756938219070435
+Final training precision: 0.9959956407546997
+Final validation precision: 0.9947988390922546
+Final training recall: 0.9280217885971069
+Final validation recall: 0.9193723797798157
 Final training f1_score: 
-0.9361684918403625
+0.9840130805969238
 Final validation f1_score: 
-0.9393420219421387
+0.9756362438201904
 
 
 Command line arguments: 
@@ -71,18 +74,21 @@ preprocess: False
 train: True
 showcase: False
 predict: False
-experiment: 16
+experiment: 25
 tensorboard: True
-disable_early_stopping: True
-augmentation: False
-batch_size: 64
-epochs: 45
+early_stopping: disable
+augmentation: True
+randaugment: None
+batch_size: 256
+epochs: 40
 optimizer: SGD
-learning_rate: 0.005
+learning_rate: 0.01
+lr_decay: 0.85
+lr_decay_iterations: 10000
 momentum: 0.95
-weight_decay: 0.0015
-regularization: None
+weight_decay: 0.0001
+label_smoothing: 0.1
 seed: 123
 split: 0.3
-architecture: I,C-f64-k3-s3,P-tm-p2-s2,C-f64-k3-s3,P-tm-p2-s2,F,H-512,D-0.5,O
+architecture: I,C-f64-k3-s3,P-tm-p2-s2,C-f64-k3-s3,P-tm-p2-s2,B,F,H-512,O
 preprocessing_layers: I,G,R
