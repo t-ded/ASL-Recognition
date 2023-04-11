@@ -42,7 +42,7 @@ def showcase_preprocessing(inp_shape):
     # Encapsulate the whole process to be able to close cameras in case of error
     try:
 
-        cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        cap = cv2.VideoCapture(0)
 
         # Establish the windows and place them accordingly
         cv2.namedWindow("Camera view")

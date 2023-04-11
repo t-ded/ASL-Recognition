@@ -54,17 +54,17 @@ _________________________________________________________________
 
 
 
-Training parameters: {'verbose': 1, 'epochs': 40, 'steps': 101}
-Final training accuracy: 0.98398756980896
-Final validation accuracy: 0.9756938219070435
-Final training precision: 0.9959956407546997
-Final validation precision: 0.9947988390922546
-Final training recall: 0.9280217885971069
-Final validation recall: 0.9193723797798157
+Training parameters: {'verbose': 1, 'epochs': 37, 'steps': 134}
+Final training accuracy: 0.9741884469985962
+Final validation accuracy: 0.9520893096923828
+Final training precision: 0.9937211871147156
+Final validation precision: 0.9881624579429626
+Final training recall: 0.9047160744667053
+Final validation recall: 0.8691983222961426
 Final training f1_score: 
-0.9840130805969238
+0.9742067456245422
 Final validation f1_score: 
-0.9756362438201904
+0.9519941210746765
 
 
 Command line arguments: 
@@ -74,13 +74,13 @@ preprocess: False
 train: True
 showcase: False
 predict: False
-experiment: 25
+experiment: 7
 tensorboard: True
 early_stopping: disable
 augmentation: True
 randaugment: None
 batch_size: 256
-epochs: 40
+epochs: 37
 optimizer: SGD
 learning_rate: 0.01
 lr_decay: 0.85

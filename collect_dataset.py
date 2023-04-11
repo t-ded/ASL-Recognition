@@ -115,7 +115,7 @@ def collect_data(gesture_list, examples="Examples", data_directory="Data",
     # Encapsulate the whole process to be able to close cameras in case of error
     try:
 
-        cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+        cap = cv2.VideoCapture(0)
 
         # Establish the windows and place them accordingly
         cv2.namedWindow("Camera view")
@@ -214,7 +214,7 @@ def collect_data(gesture_list, examples="Examples", data_directory="Data",
                     cv2.resizeWindow("BigExample", 1280, 720)
                     cv2.moveWindow("BigExample", 125, 50)
                     cv2.imshow("BigExample", cv2.resize(example, (1280, 720)))
-                    cv2.waitKey(3000)
+                    cv2.waitKey(5000)
                     cv2.destroyWindow("BigExample")
 
                 # Halt the process until the "p" key is hit again
@@ -224,7 +224,7 @@ def collect_data(gesture_list, examples="Examples", data_directory="Data",
 
                 # To reduce the number of almost identical frames, only save every n frames
                 # To give space for adjustments and "learning" a new sign, only start collecting after some time
-                if not current % 10 and current - current_amounts[gesture] > 80:
+                if not current % 7 and current - current_amounts[gesture] > 60:
 
                     # Estimate the time from the last saved image
                     if eta_flag:

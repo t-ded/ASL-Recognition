@@ -2,8 +2,6 @@
 # disable=C0301, C0103, E1101
 # TODO: Adjust README.md file
 # TODO: Adjust the docstring for this run function
-# TODO: Add BatchNormalization layer support to model.py
-# TODO: Add BatchNormalization layers to default architecture in config.json
 """
 A simple function to enable running
 the different scripts from command line.
@@ -237,7 +235,7 @@ def main(args):
         # Apply given augmentation pipeline
         if args.augmentation:
             augmentation_model = image_augmentation(seed=args.seed)
-            train_images = train_images.map(lambda x, y: (augmentation_model(x), y),
+            train_images = train_images.map(lambda x, y: (augmentation_model(x, training=True), y),
                                             num_parallel_calls=tf.data.AUTOTUNE).prefetch(buffer_size=tf.data.AUTOTUNE)
 
         elif args.randaugment:
@@ -355,13 +353,18 @@ def main(args):
 
         # Compile the model with cross-entropy loss, selected metrics and set up optimizer
         model.compile(optimizer=optimizer,
-                      loss=tf.keras.losses.CategoricalCrossentropy(label_smoothing=args.label_smoothing),
+                      loss=tf.keras.losses.CategoricalCrossentropy(from_logits=False,
+                                                                   label_smoothing=args.label_smoothing),
                       metrics=[tf.keras.metrics.CategoricalAccuracy(name="accuracy"),
                                tf.keras.metrics.Recall(name="recall"),
                                tf.keras.metrics.Precision(name="precision"),
                                tfa.metrics.F1Score(len(gestures),
                                                    average="macro",
-                                                   name="f1_score")])
+                                                   name="f1_score"),
+                               tf.keras.metrics.AUC(name="auc",
+                                                    multi_label=True,
+                                                    num_labels=len(gestures),
+                                                    from_logits=False)])
 
         # Show summaries for all the models
         utils.indent(n=2)
