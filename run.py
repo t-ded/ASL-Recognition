@@ -60,6 +60,10 @@ procedure.add_argument("-tr", "--train", action="store_true", help="If given, ru
 procedure.add_argument("-show", "--showcase", action="store_true", help="If given, run the showcasing process")
 procedure.add_argument("-pred", "--predict", action="store_true", help="If given, run the showcasing process with model prediction")
 
+# Specify prediction settings
+prediction_settings = parser.add_argument_group("Prediction settings")
+prediction_settings.add_argument("--guided", action="store_true", help="If given, use the displayed example image as the correct label")
+
 # Specify training settings
 train_settings = parser.add_argument_group("Training settings")
 train_settings.add_argument("--experiment", default=None, type=int,
@@ -445,7 +449,8 @@ def main(args):
         showcase_model(gestures, examples=example_dir,
                        predict=True, model=model,
                        translations=config["Paths"]["Translations"],
-                       img_size=img_size)
+                       img_size=img_size,
+                       guided=args.guided)
 
 
 if __name__ == "__main__":

@@ -18,8 +18,10 @@ from timeit import default_timer
 from utils import create_rectangle, get_dictionary
 
 
-def showcase_model(gesture_list, examples="Examples", predict=False,
-                   model=None, translations="translations.txt", img_size=196):
+def showcase_model(gesture_list, examples="Examples",
+                   predict=False, model=None,
+                   translations="translations.txt", img_size=196,
+                   guided=False):
     """
     Function for image capturing and showcasing the process, preprocessing
     and possibly the model prediction if given the model.
@@ -44,6 +46,8 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
             Name of the txt file with translations of gestures in the following format: gesture_English \t gesture_Czech.
         img_size: int (default 196)
             Size of images for prediction.
+        guided: bool (default False)
+            Whether or not to assume the current example as the correct label
     """
 
     # Input management
@@ -94,6 +98,9 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
         raise ValueError("Different datatype than int has been given for the image size.")
     if img_size < 1:
         raise ValueError("Image size must be positive.")
+
+    if not isinstance(guided, bool):
+        raise ValueError("Different datatype than boolean has been given as input for the guided parameter.")
 
     # The rectangle in the frame that is cropped from the web camera image
     # (one for torso location, one for fingerspelling location)
@@ -173,6 +180,8 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
 
                 # Adjust the color of the text and frame based on the current state
                 # Green - running model prediction, Orange - model prediction is paused
+                # If 'guided' is set to True, then green corresponds to correct prediction
+                # and red corresponds to incorrect prediction(s)
                 if pause_flag:
                     color = (0, 128, 255)
                 else:
@@ -182,15 +191,33 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
                 cv2.rectangle(frame, rect[0], rect[3], color, 2)
                 # Add information about prediction if expected, otherwise just show the name of the gesture
                 if predict and not pause_flag:
+
+                    # Measure the time taken for the prediction
                     pred_time_start = default_timer()
                     prediction = model(frame_cut[None, :],
-                                       training=False).numpy()
-                    probability = prediction.max(axis=-1).round(2)
-                    txt = gesture_list[np.argmax(prediction, axis=1)[0]]
+                                       training=False)
                     pred_time = round(default_timer() - pred_time_start, 3)
-                    if not lang:
-                        txt = dictionary[txt]
-                    txt += " (" + str(probability[0]) + ")"
+
+                    # Get k most confident predictions
+                    most_confident = tf.math.top_k(prediction, k=3)
+                    most_confident_indices = most_confident.indices.numpy()[0]
+                    most_confident_probabilities = most_confident.values.numpy()[0].round(2)
+                    most_confident_predictions = [gesture_list[ind] for ind in most_confident_indices]
+
+                    # Display all of the most confident predictions
+                    for i, (pred, prob) in enumerate(zip(most_confident_predictions, most_confident_probabilities)):
+                        txt = dictionary[pred] if not lang else pred
+                        txt += " (" + str(prob) + ")"
+
+                        # If 'guided' is set to True, display predictions in red except
+                        # the correct one (if present)
+                        pred_color = color
+                        if guided:
+                            pred_color = (0, 0, 255)
+                            if pred == gesture:
+                                pred_color = color
+                        cv2.putText(frame, txt, (5, 350 + i * 35),
+                                    cv2.FONT_HERSHEY_DUPLEX, 0.8, pred_color, 2)
 
                     # Display average time per gesture
                     cv2.putText(frame, "TPG: " + str(pred_time) + " s", (5, 470),
@@ -199,8 +226,8 @@ def showcase_model(gesture_list, examples="Examples", predict=False,
                     txt = gesture
                     if not lang:
                         txt = dictionary[txt]
-                cv2.putText(frame, txt, (rect[0][0], rect[0][1] - 15),
-                            cv2.FONT_HERSHEY_DUPLEX, 1, color, 2)
+                    cv2.putText(frame, txt, (rect[0][0], rect[0][1] - 15),
+                                cv2.FONT_HERSHEY_DUPLEX, 1, color, 2)
                 cv2.imshow("Camera view", cv2.resize(frame, (800, 600)))
 
                 # Show example on new gesture
