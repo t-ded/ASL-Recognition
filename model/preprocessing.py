@@ -7,7 +7,6 @@ Modularized and parametrized preprocessing pipeline utilities for RGB images.
 @author: Tomáš Děd
 """
 
-import cv2
 import tensorflow as tf
 import tensorflow_addons as tfa
 import numpy as np
@@ -58,52 +57,35 @@ class AdaptiveThresholding(tf.keras.layers.Layer):
                 Batch for the layer to perform operations on
 
         Returns:
-            tf.data.dataset
-                The dataset on which the apply_threshold function was mapped (applied to each element)
+            output_batch
+                The batch with each image thresholded using given thresholding type
 
         """
 
-        def apply_thresholding(image):
-            """
-            Apply adaptive thresholding on the given image (tf.Tensor object)
+        if self.thresholding_type == "mean":
 
-            Parameters:
-                image: tf.Tensor (dtype tf.uint8)
-                    Image to apply adaptive thresholding on.
+            # Obtain mean of each block per batch sample
+            # via a convolution with an appropriate kernel
+            mean = tf.nn.conv2d(input_batch,
+                                filters=tf.ones([self.block_size,
+                                                 self.block_size,
+                                                 1,
+                                                 1]) / (self.block_size ** 2),
+                                strides=1,
+                                padding="SAME")
 
-            Returns:
-                np.ndarray
-                    Numpy array that corresponds to the thresholded image
-            """
+            # Mask and threshold the input batch by the means
+            return tf.where(input_batch <= mean - self.constant, 255, 0)
 
-            # OpenCV adaptive thresholding only accepts numpy arrays
-            img = image.numpy()
+        else:
 
-            # Perform thresholding based on specified type
-            if self.thresholding_type == "mean":
-                thresholded_img = cv2.adaptiveThreshold(img, 255,
-                                                        cv2.ADAPTIVE_THRESH_MEAN_C,
-                                                        cv2.THRESH_BINARY_INV,
-                                                        self.block_size, self.constant)
+            # Obtain gaussian weighted sum of each block per batch sample
+            # via a convolution with an appropriate kernel
+            gaussian_weighted = tfa.image.gaussian_filter2d(input_batch,
+                                                            filter_shape=self.block_size)
 
-            else:
-                thresholded_img = cv2.adaptiveThreshold(img, 255,
-                                                        cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-                                                        cv2.THRESH_BINARY_INV,
-                                                        self.block_size, self.constant)
-
-            # Output for this function should be tensors of shape (img_size, img_size, 1)
-            return tf.expand_dims(tf.convert_to_tensor(thresholded_img,
-                                                       dtype=tf.uint8),
-                                  axis=-1)
-
-        # Perform the thresholding per image in a batch
-        return tf.map_fn(lambda image: tf.py_function(func=apply_thresholding,
-                                                      inp=[image],
-                                                      Tout=tf.uint8),
-                         input_batch,
-                         fn_output_signature=tf.TensorSpec(input_batch.shape[1:],
-                                                           dtype=tf.uint8))
+            # Mask and threshold the input batch by the gaussian weighted sums
+            return tf.where(input_batch <= gaussian_weighted - self.constant, 255, 0)
 
     def compute_output_shape(self, input_shape):
         """
@@ -173,8 +155,8 @@ class Blurring(tf.keras.layers.Layer):
                 Batch for the layer to perform operations on
 
         Returns:
-            tf.data.dataset
-                The dataset on which the tfa.image filter function was applied
+            output_batch
+                The batch on which the tfa.image filter function was mapped
         """
 
         # Perform blurring based on specified type
@@ -227,11 +209,11 @@ class Grayscale(tf.keras.layers.Layer):
                 Batch for the layer to perform operations on
 
         Returns:
-            tf.data.dataset
-                The dataset on which the tfa.image.rgb_to_grayscale function was applied
+            output_batch
+                The batch on which the tfa.image.rgb_to_grayscale function was mapped
         """
 
-        return tf.cast(tf.image.rgb_to_grayscale(input_batch), tf.uint8)
+        return tf.image.rgb_to_grayscale(input_batch)
 
     def get_config(self):
         """
@@ -241,15 +223,60 @@ class Grayscale(tf.keras.layers.Layer):
         return super(Grayscale, self).get_config()
 
 
-class ConfusionMatrixCallback(tf.keras.callbacks.Callback):
+class Sparsing(tf.keras.layers.Layer):
     """
-    A class to save confusion matrix for model's prediction at the end of every epoch
+    A class for tensorflow.keras Sparsing layer
 
     Methods:
         call(input_batch)
             Operations performed on layer call within a tensorflow.keras model
         get_config()
             Output configuration for the layer for the purpose of model saving
+    """
+
+    def __init__(self, **kwargs):
+        """
+
+        Parameters:
+            **kwargs:
+                Keyword arguments inherited from the tf.keras.layers.Layer class
+        """
+
+        super(Sparsing, self).__init__()
+        self.trainable = False
+
+    def call(self, input_batch):
+        """
+        Actions to perform on the input batch during layer call within tf.keras model
+
+        Parameters:
+            input_batch: tf.data.dataset
+                Batch for the layer to perform operations on
+
+        Returns:
+            output_batch
+                Output in the form of sparse tensors
+        """
+
+        return tf.sparse.from_dense(input_batch)
+
+    def get_config(self):
+        """
+        Return configuration of the layer for the purpose of model saving
+        """
+
+        return super(Sparsing, self).get_config()
+
+
+class ConfusionMatrixCallback(tf.keras.callbacks.Callback):
+    """
+    A class to save confusion matrix for model's prediction at the end of every epoch
+
+    Methods:
+        plot_confusion_matrix(cm)
+            Return figure of the given confusion matrix
+        on_epoch_end(epoch, logs)
+            Operations performed at the end of every epoch with the result saved to the logdir
     """
 
     def __init__(self, writer, gesture_list,

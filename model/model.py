@@ -10,10 +10,11 @@ on the following topic:
 import warnings
 import re
 import tensorflow as tf
-from model.preprocessing import Grayscale, AdaptiveThresholding, Blurring
+from model.preprocessing import Grayscale, AdaptiveThresholding, Blurring, Sparsing
 
 
-def build_model(inp_shape, output_size, name="model", instructions="I,O"):
+def build_model(inp_shape, output_size, name="model",
+                instructions="I,O", sparse_input=False):
     """
     Build model with the specified architecture
 
@@ -60,6 +61,8 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
                     - Batch normalization: B
                     - Global Pooling (type(t, one of average(a) or max (m))): G-ta
                     - Output: O
+        sparse_input: bool (default False)
+            Whether the input tensors are expected to be sparse (e.g. after thresholding)
 
     Returns:
         model: tf.keras.Model
@@ -82,6 +85,9 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
         raise ValueError("The dimensions of the output must be positive.")
 
     if not isinstance(name, str):
+        raise ValueError("Different datatype than string has been given as input for the parameter name")
+
+    if not isinstance(sparse_input, bool):
         raise ValueError("Different datatype than string has been given as input for the parameter name")
 
     # Further input management for the instructions variable is performed
@@ -110,7 +116,7 @@ def build_model(inp_shape, output_size, name="model", instructions="I,O"):
     flatten_flag = 0
 
     # Initialize the input layer
-    inp = tf.keras.layers.Input(shape=inp_shape, name="trainable_input")
+    inp = tf.keras.layers.Input(shape=inp_shape, name="trainable_input", sparse=sparse_input)
     hidden = inp
 
     # Parse the instructions
@@ -435,9 +441,11 @@ def build_preprocessing(inp_shape, name="preprocessing", instructions="I,G"):
         wrn += "The input layer will be added automatically.\n"
         warnings.warn(wrn)
 
+    # Keep information about thresholding to set a sparse output
+    thresholded = False
+
     # Initialize the input layer
-    inp = tf.keras.layers.Input(shape=inp_shape, name="preprocessing_input",
-                                dtype=tf.uint8)
+    inp = tf.keras.layers.Input(shape=inp_shape, name="preprocessing_input")
     preprocessing = inp
 
     # Parse the instructions
@@ -581,10 +589,16 @@ def build_preprocessing(inp_shape, name="preprocessing", instructions="I,G"):
             preprocessing = AdaptiveThresholding(thresholding_type=thresholding_type,
                                                  block_size=int(block_size),
                                                  constant=float(constant))(preprocessing)
+            thresholded = True
+            warnings.warn("Thresholding layer was applied, thus sparsing layer will be added to make the output sparse.\n")
 
         # Rescaling layer
         elif layer_name == "R":
 
             preprocessing = tf.keras.layers.Rescaling(scale=(1. / 255))(preprocessing)
+
+    # Thresholded images will contain lots of zeros, making sparse implementation more effective
+    if thresholded:
+        preprocessing = Sparsing()(preprocessing)
 
     return tf.keras.Model(inputs=inp, outputs=preprocessing, name=name)

@@ -70,6 +70,7 @@ train_settings.add_argument("--experiment", default=None, type=int,
                             help="Number of this experiment (the settings will be saved in the respective newly created folder or loaded from an existing folder)")
 train_settings.add_argument("-tb", "--tensorboard", action="store_true", help="If given, set up TensorBoard callback for model training")
 train_settings.add_argument("-es", "--early_stopping", default="loss", choices=["disable", "loss", "accuracy", "f1_score", "recall", "precision"], help="Choice of the metric to monitor by the EarlyStopping callback during model training")
+train_settings.add_argument("-nockpt", "--disable_checkpoint", action="store_true", help="If given, do not save model checkpoint after every epoch during training")
 
 # Specify augmentation type and settings for RandAugment
 augmentation_settings = parser.add_argument_group("Augmentation settings")
@@ -264,15 +265,18 @@ def main(args):
         tb_path = os.path.join(config["Paths"]["Logs"],
                                "{}".format(datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")))
 
-        # Create callbacks for the model to save progress during training
-        # Checkpoint callback
-        cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=cp_path,
-                                                         verbose=1,
-                                                         save_weights_only=True,
-                                                         save_freq="epoch")
-        callbacks = [cp_callback]
+        # Create callbacks for the model to save progress during training if specified
+        callbacks = []
 
-        # TensorBoard callback (optional, default is to not include)
+        # Checkpoint callback (optional, default is to include)
+        if not args.disable_checkpoint:
+            cp_callback = tf.keras.callbacks.ModelCheckpoint(filepath=cp_path,
+                                                             verbose=1,
+                                                             save_weights_only=True,
+                                                             save_freq="epoch")
+            callbacks.append(cp_callback)
+
+        # TensorBoard + confusion matrix callback (optional, default is to not include)
         if args.tensorboard:
             tb_callback = tf.keras.callbacks.TensorBoard(log_dir=tb_path,
                                                          histogram_freq=1)
@@ -287,12 +291,13 @@ def main(args):
 
         # Early stopping callback (optional, default is to include)
         if args.early_stopping != "disable":
+            baseline = 1.5 if args.early_stopping == "loss" else 0.3
             es_callback = tf.keras.callbacks.EarlyStopping(monitor="val_" + args.early_stopping,
                                                            min_delta=0.001,
                                                            patience=5,
                                                            verbose=1,
                                                            mode="auto",
-                                                           baseline=0.3,
+                                                           baseline=baseline,
                                                            restore_best_weights=True,
                                                            start_from_epoch=10)
             callbacks.append(es_callback)
@@ -315,13 +320,17 @@ def main(args):
         # Adjust the number of input channels for the trainable layers based on grayscale layer presence
         channels = 1 if "G" in args.preprocessing_layers else 3
 
+        # Optimize the input layer for sparse tensors based on thresholding layer presence
+        thresholded = True if "T" in args.preprocessing_layers else False
+
         # Build the model according to given instructions
         trainable = build_model(inp_shape=[img_size,
                                            img_size,
                                            channels],
                                 output_size=len(gestures),
                                 instructions=args.architecture,
-                                name="trainable_layers")
+                                name="trainable_layers",
+                                sparse_input=thresholded)
 
         # Merge the preprocessing pipeline with the trainable layers
         model = tf.keras.Model(inputs=preprocessing.input,
