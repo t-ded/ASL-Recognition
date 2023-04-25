@@ -114,70 +114,6 @@ class AdaptiveThresholding(tf.keras.layers.Layer):
         return config
 
 
-class Blurring(tf.keras.layers.Layer):
-    """
-    A class for tensorflow.keras Blurring layer
-
-    Methods:
-        call(input_batch)
-            Operations performed on layer call within a tensorflow.keras model
-        get_config()
-            Output configuration for the layer for the purpose of model saving
-    """
-
-    def __init__(self, blurring_type="median", kernel_size=3, sigma=1, **kwargs):
-        """
-
-        Parameters:
-            blurring_type: str (default "median", optional)
-                What type of blurring to perform (options are median and gaussian).
-                Gaussian thresholding is selected for strings other than "median"
-            kernel_size: positive int (default 3, optional)
-                The size of the kernel within blurring function
-            sigma: positive float (default 1, optional)
-                The sigma parameter for gaussian blurring (irrelevant for median blur)
-            **kwargs:
-                Keyword arguments inherited from the tf.keras.layers.Layer class
-        """
-
-        super(Blurring, self).__init__(**kwargs)
-        self.blurring_type = blurring_type
-        self.kernel_size = kernel_size
-        self.sigma = sigma
-        self.trainable = False
-
-    def call(self, input_batch):
-        """
-        Actions to perform on the input batch during layer call within tf.keras model
-
-        Parameters:
-            input_batch: tf.data.dataset
-                Batch for the layer to perform operations on
-
-        Returns:
-            output_batch
-                The batch on which the tfa.image filter function was mapped
-        """
-
-        # Perform blurring based on specified type
-        if self.blurring_type == "median":
-            return tfa.image.median_filter2d(input_batch, self.kernel_size)
-
-        return tfa.image.gaussian_filter2d(input_batch, self.kernel_size, self.sigma)
-
-    def get_config(self):
-        """
-        Return configuration of the layer for the purpose of model saving
-        """
-
-        config = super(Blurring, self).get_config()
-        config.update({"blurring_type": self.blurring_type,
-                       "kernel_size": self.kernel_size,
-                       "sigma": self.sigma})
-
-        return config
-
-
 class Grayscale(tf.keras.layers.Layer):
     """
     A class for tensorflow.keras Grayscale layer
@@ -221,51 +157,6 @@ class Grayscale(tf.keras.layers.Layer):
         """
 
         return super(Grayscale, self).get_config()
-
-
-class Sparsing(tf.keras.layers.Layer):
-    """
-    A class for tensorflow.keras Sparsing layer
-
-    Methods:
-        call(input_batch)
-            Operations performed on layer call within a tensorflow.keras model
-        get_config()
-            Output configuration for the layer for the purpose of model saving
-    """
-
-    def __init__(self, **kwargs):
-        """
-
-        Parameters:
-            **kwargs:
-                Keyword arguments inherited from the tf.keras.layers.Layer class
-        """
-
-        super(Sparsing, self).__init__()
-        self.trainable = False
-
-    def call(self, input_batch):
-        """
-        Actions to perform on the input batch during layer call within tf.keras model
-
-        Parameters:
-            input_batch: tf.data.dataset
-                Batch for the layer to perform operations on
-
-        Returns:
-            output_batch
-                Output in the form of sparse tensors
-        """
-
-        return tf.sparse.from_dense(input_batch)
-
-    def get_config(self):
-        """
-        Return configuration of the layer for the purpose of model saving
-        """
-
-        return super(Sparsing, self).get_config()
 
 
 class ConfusionMatrixCallback(tf.keras.callbacks.Callback):

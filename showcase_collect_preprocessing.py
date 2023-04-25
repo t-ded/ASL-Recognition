@@ -55,12 +55,12 @@ def showcase_preprocessing(inp_shape):
             cv2.moveWindow(f"Preprocessing pipeline {i + 1}", 655 + 325 * (i % 2), 16 + 270 * (i // 2))
 
         # Set a list of instructions
-        instructions = ["I,G,B-tm-k7,T-tm-b5-c(3)",
-                        "I,G,B-tm-k7,T-tg-b5-c(3)",
-                        "I,G,B-tm-k7,T-tm-b7-c(3)",
-                        "I,G,B-tm-k7,T-tg-b7-c(3)",
-                        "I,G,B-tg-k7-s1,T-tm-b5-c(3)",
-                        "I,G,B-tg-k7-s1,T-tg-b5-c(3)"]
+        instructions = ["I,G,T-tm-b3-c(3)",
+                        "I,G,T-tm-b5-c(3)",
+                        "I,G,T-tm-b7-c(3)",
+                        "I,G,T-tg-b3-c(3)",
+                        "I,G,T-tg-b5-c(3)",
+                        "I,G,T-tg-b5-c(3)"]
 
         # Setting up preprocessing sequential pipelines
         pipelines_list = [build_preprocessing(inp_shape=inp_shape,

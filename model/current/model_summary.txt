@@ -8,6 +8,9 @@ _________________________________________________________________
                                                                  
  grayscale (Grayscale)       (None, 196, 196, 1)       0         
                                                                  
+ adaptive_thresholding (Adap  (None, 196, 196, 1)      0         
+ tiveThresholding)                                               
+                                                                 
  rescaling (Rescaling)       (None, 196, 196, 1)       0         
                                                                  
 =================================================================
@@ -55,16 +58,16 @@ _________________________________________________________________
 
 
 Training parameters: {'verbose': 1, 'epochs': 29, 'steps': 255}
-Final training accuracy: 0.9200986623764038
-Final validation accuracy: 0.9455865025520325
-Final training precision: 0.9869886636734009
-Final validation precision: 0.9896541237831116
-Final training recall: 0.8065820932388306
-Final validation recall: 0.8276071548461914
+Final training accuracy: 0.9050070643424988
+Final validation accuracy: 0.9256730079650879
+Final training precision: 0.9838435649871826
+Final validation precision: 0.9820179343223572
+Final training recall: 0.7809186577796936
+Final validation recall: 0.8180615901947021
 Final training f1_score: 
-0.9202314615249634
+0.9050899147987366
 Final validation f1_score: 
-0.9459240436553955
+0.9262667298316956
 
 
 Command line arguments: 
@@ -75,9 +78,10 @@ train: True
 showcase: False
 predict: False
 guided: False
-experiment: 7
+experiment: 10
 tensorboard: True
 early_stopping: disable
+disable_checkpoint: False
 augmentation: False
 randaugment: 5,2
 batch_size: 256
@@ -92,4 +96,4 @@ label_smoothing: 0.1
 seed: 123
 split: 0.3
 architecture: I,C-f64-k3-s3,P-tm-p2-s2,C-f64-k3-s3,P-tm-p2-s2,B,F,H-512,O
-preprocessing_layers: I,G,R
+preprocessing_layers: I,G,T-tm-b7-c(3),R

@@ -10,11 +10,11 @@ on the following topic:
 import warnings
 import re
 import tensorflow as tf
-from model.preprocessing import Grayscale, AdaptiveThresholding, Blurring, Sparsing
+from model.preprocessing import Grayscale, AdaptiveThresholding
 
 
 def build_model(inp_shape, output_size, name="model",
-                instructions="I,O", sparse_input=False):
+                instructions="I,O"):
     """
     Build model with the specified architecture
 
@@ -61,8 +61,6 @@ def build_model(inp_shape, output_size, name="model",
                     - Batch normalization: B
                     - Global Pooling (type(t, one of average(a) or max (m))): G-ta
                     - Output: O
-        sparse_input: bool (default False)
-            Whether the input tensors are expected to be sparse (e.g. after thresholding)
 
     Returns:
         model: tf.keras.Model
@@ -85,9 +83,6 @@ def build_model(inp_shape, output_size, name="model",
         raise ValueError("The dimensions of the output must be positive.")
 
     if not isinstance(name, str):
-        raise ValueError("Different datatype than string has been given as input for the parameter name")
-
-    if not isinstance(sparse_input, bool):
         raise ValueError("Different datatype than string has been given as input for the parameter name")
 
     # Further input management for the instructions variable is performed
@@ -116,7 +111,7 @@ def build_model(inp_shape, output_size, name="model",
     flatten_flag = 0
 
     # Initialize the input layer
-    inp = tf.keras.layers.Input(shape=inp_shape, name="trainable_input", sparse=sparse_input)
+    inp = tf.keras.layers.Input(shape=inp_shape, name="trainable_input")
     hidden = inp
 
     # Parse the instructions
@@ -387,20 +382,16 @@ def build_preprocessing(inp_shape, name="preprocessing", instructions="I,G"):
             than one grayscale layer.
             Adaptive thresholding can only be used post-grayscale layer.
 
-                Example: "I,G,B-tg-k3-s1,T-tm-b3-c(-3),R"
+                Example: "I,G,T-tm-b3-c(-3),R"
                     Creates a model with:
                         - input layer with shape inp_shape
                         - grayscale layer
-                        - blurring layer with type gaussian, kernel_size 3 and sigma 1
                         - adaptive thresholding layer with type mean, block_size 3 and constant -3
                         - rescaling layer
 
                 Supported layers and their supported arguments:
                     - Input: I
                     - Grayscale: G
-                    - Blurring (type(t, one of gaussian(g) or median(m)),
-                                kernel_size(k),
-                                sigma(s, only relevant for gaussian blurring)): B-tg-k3-s2
                     - AdaptiveThresholding (type(t, one of gaussian(g) or mean(m)),
                                             block_size(b),
                                             constant(c, specified in parentheses)): T-tm-b3-c(-3)
@@ -441,9 +432,6 @@ def build_preprocessing(inp_shape, name="preprocessing", instructions="I,G"):
         wrn += "The input layer will be added automatically.\n"
         warnings.warn(wrn)
 
-    # Keep information about thresholding to set a sparse output
-    thresholded = False
-
     # Initialize the input layer
     inp = tf.keras.layers.Input(shape=inp_shape, name="preprocessing_input")
     preprocessing = inp
@@ -465,8 +453,8 @@ def build_preprocessing(inp_shape, name="preprocessing", instructions="I,G"):
         # Set up the name of the layer
         layer_name = layer[0]
 
-        if len(layer) == 1 and layer_name in ["B", "T"]:
-            wrn = "\nOne of the blurring or thresholding layers does not have specified parameters.\n"
+        if len(layer) == 1 and layer_name == "T":
+            wrn = "\nOne of the thresholding layers does not have specified parameters.\n"
             wrn += "Omitting the layer and continuing the process.\n"
             warnings.warn(wrn)
             continue
@@ -482,56 +470,6 @@ def build_preprocessing(inp_shape, name="preprocessing", instructions="I,G"):
                 grayscale_limit = 0
 
             continue
-
-        # Blurring layer
-        elif layer_name == "B":
-
-            # Ensure the type of the blurring layer is specified
-            match = re.search(r"-t(\w)", layer)
-            if not match:
-                wrn = "\nThe type for the blurring layer is not specified.\n"
-                wrn += "Omitting the layer and continuing the process.\n"
-                warnings.warn(wrn)
-                continue
-            blurring_type = match.group(1)
-
-            # Choose the correct type of the blurring layer and ensure it is valid
-            if blurring_type == "g":
-                blurring_type = "gaussian"
-
-            elif blurring_type == "m":
-                blurring_type = "median"
-
-            else:
-                wrn = "\nThe type for the blurring layer is not valid.\n"
-                wrn += "Omitting the layer and continuing the process.\n"
-                warnings.warn(wrn)
-                continue
-
-            # If kernel size is not specified, set it to default
-            match = re.search(r"-k(\d*)", layer)
-            if not match:
-                kernel_size = 3
-                wrn = "\nThe kernel_size for the blurring layer is not specified.\n"
-                wrn += f"Setting the kernel_size to default ({kernel_size}) and continuing the process.\n"
-                warnings.warn(wrn)
-            else:
-                kernel_size = match.group(1)
-
-            # If sigma is not specified, set it to default (only relevant for gaussian blur)
-            match = re.search(r"s([\d\.]*)", layer)
-            if not match:
-                sigma = 1
-                if blurring_type == "gaussian":
-                    wrn = "\nThe sigma parameter for the gaussian blurring layer is not specified.\n"
-                    wrn += f"Setting the sigma parameter to default ({sigma}) and continuing the process.\n"
-                    warnings.warn(wrn)
-            else:
-                sigma = match.group(1)
-
-            preprocessing = Blurring(blurring_type=blurring_type,
-                                     kernel_size=int(kernel_size),
-                                     sigma=float(sigma))(preprocessing)
 
         # Adaptive thresholding layer
         elif layer_name == "T":
@@ -570,8 +508,8 @@ def build_preprocessing(inp_shape, name="preprocessing", instructions="I,G"):
             match = re.search(r"-b(\d*)", layer)
             if not match:
                 block_size = 3
-                wrn = "\nThe kernel_size for the blurring layer is not specified.\n"
-                wrn += f"Setting the kernel_size to default ({kernel_size}) and continuing the process.\n"
+                wrn = "\nThe block_size for the thresholding layer is not specified.\n"
+                wrn += f"Setting the block_size to default ({block_size}) and continuing the process.\n"
                 warnings.warn(wrn)
             else:
                 block_size = match.group(1)
@@ -589,16 +527,10 @@ def build_preprocessing(inp_shape, name="preprocessing", instructions="I,G"):
             preprocessing = AdaptiveThresholding(thresholding_type=thresholding_type,
                                                  block_size=int(block_size),
                                                  constant=float(constant))(preprocessing)
-            thresholded = True
-            warnings.warn("Thresholding layer was applied, thus sparsing layer will be added to make the output sparse.\n")
 
         # Rescaling layer
         elif layer_name == "R":
 
             preprocessing = tf.keras.layers.Rescaling(scale=(1. / 255))(preprocessing)
-
-    # Thresholded images will contain lots of zeros, making sparse implementation more effective
-    if thresholded:
-        preprocessing = Sparsing()(preprocessing)
 
     return tf.keras.Model(inputs=inp, outputs=preprocessing, name=name)

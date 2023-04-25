@@ -6,7 +6,7 @@
 A simple function to enable running
 the different scripts from command line.
 
-Mutually exclusive process specification parameters:
+Mutually exclusive process specification parameters (if none given, showcasing is the default):
 
     -col (--collect)
         Start the process of data collection.
@@ -30,8 +30,81 @@ Mutually exclusive process specification parameters:
         The model is expected in the model/current directory.
         Primarily uses the showcase_model.py script.
 
+Further process specification parameters:
+
+    --config_dir (default "")
+        Specify the directory with the config.json file.
+    --guided
+        If given, run the prediction mode in a guided format.
+        That means, the correct gesture is assumed to be the one in the example photo.
+        Model predictions are then colourcoded by their correctness.
+
 Training parameters:
-    TODO
+
+    --experiment (default None)
+        Integer that sets the number for the current experiment - the folder for checkpoints and saving.
+        Either positive (goes into model/experiments folder) or -1 (goes into model/current folder).
+        If not given, defaults to the number of the last folder in model/experiments plus one.
+        User might be prompted for confirmation in case of conflicting folder numbering.
+    -tb (--tensorboard)
+        If given, the TensorBoard callback is set up.
+        This also gives pass to the EarlyStopping callback.
+    -es (--early_stopping) (default "loss")
+        Specify the validation metric to monitor by the EarlyStopping callback.
+        One of "disable", "loss", "accuracy", "f1_score", "recall", "precision" or "auc".
+    -nockpt (--disable_checkpoint)
+        If given, the model is not saved after every epoch but only after the whole training process.
+    --seed (default 123)
+        Positive integer that sets the seed for the random operations during the training process.
+    --split (default 0.3)
+        A positive float between 0 and 1 that sets the portion of the validation dataset during training.
+
+Augmentation settings:
+
+    -aug (--augmentation)
+        If given, apply a simple augmentation pipeline.
+        The pipeline consists of slight random rotation, slight random translation and random horizontal flip.
+    -raug (--randaugment) (default None)
+        A set of two positive integers "M,N" that specifies the settings for the RandAugment augmentation pipeline.
+        M decides the strngth of applied augmentations while N is the number of them in the pipeline.
+
+Hyperparametes:
+
+    -bs (--batch_size) (default 128)
+        Positive integer for the batch size.
+    -e (--epochs) (default 10)
+        Positive integer for the number of epochs.
+    -opt (--optimizer) (default "adam")
+        The optimizer to use. The corresponding weight decay variant is used.
+        One of "adam" or "SGD".
+    -lr (--learning_rate) (default 0.01)
+        A positive float that specifies the initial learning rate.
+    -lrd (--lr_decay) (default 1)
+        A positive float between 0 and 1 that specify the constant for the exponential learning rate decay.
+        The decay is also applied to the weight decay schedule.
+        1 corresponds to no decay.
+    -lrdit (--lr_decay_iterations) (default 10,000)
+        Positive integer that sets the number of iterations after which the learning rate decay step is applied.
+    -mom (--momentum) (default 0)
+        A positive float.
+        The value of momentum to use for the SGD with momentum.
+        0 corresponds to classical SGD.
+    -wd (--weight_decay) (default 0)
+        A positive float.
+        The weight decay to apply within the optimizer.
+    -ls (--label_smoothing) (default 0)
+        A positive float between 0 and 1.
+        The value to apply with label smoothing within the categorical crossentropy loss.
+
+Architectural settings for training:
+    -arch (--architecture) (default None)
+        The architecture of the model to be used during training as given by the build_model function in model/model.py.
+        For more information regarding these instructions, refer to the documentation of the respective function.
+        None results in loading the architecture from the config.json file.
+    -prep (--preprocessing_layers) (default None)
+        The architecture of the preprocessing pipeline to be used during training as given by the build_preprocessing function in model/model.py.
+        For more information regarding these instructions, refer to the documentation of the respective function.
+        None results in loading the architecture from the config.json file.
 """
 
 import argparse
@@ -46,7 +119,7 @@ import utils
 from collect_dataset import collect_data
 from showcase_collect_preprocessing import showcase_preprocessing
 from showcase_model import showcase_model
-from model.preprocessing import Grayscale, AdaptiveThresholding, Blurring, image_augmentation, ConfusionMatrixCallback
+from model.preprocessing import Grayscale, AdaptiveThresholding, image_augmentation, ConfusionMatrixCallback
 from model.model import build_model, build_preprocessing
 
 parser = argparse.ArgumentParser(allow_abbrev=False)
@@ -69,8 +142,10 @@ train_settings = parser.add_argument_group("Training settings")
 train_settings.add_argument("--experiment", default=None, type=int,
                             help="Number of this experiment (the settings will be saved in the respective newly created folder or loaded from an existing folder)")
 train_settings.add_argument("-tb", "--tensorboard", action="store_true", help="If given, set up TensorBoard callback for model training")
-train_settings.add_argument("-es", "--early_stopping", default="loss", choices=["disable", "loss", "accuracy", "f1_score", "recall", "precision"], help="Choice of the metric to monitor by the EarlyStopping callback during model training")
+train_settings.add_argument("-es", "--early_stopping", default="loss", choices=["disable", "loss", "accuracy", "f1_score", "recall", "precision", "auc"], help="Choice of the metric to monitor by the EarlyStopping callback during model training")
 train_settings.add_argument("-nockpt", "--disable_checkpoint", action="store_true", help="If given, do not save model checkpoint after every epoch during training")
+train_settings.add_argument("--seed", default=123, type=int, help="Random seed for operations including randomness (e.g. shuffling)")
+train_settings.add_argument("--split", default=0.3, type=float, help="Portion of the full dataset to reserve for validation")
 
 # Specify augmentation type and settings for RandAugment
 augmentation_settings = parser.add_argument_group("Augmentation settings")
@@ -89,8 +164,6 @@ hyperparameters.add_argument("-lrdit", "--lr_decay_iterations", default=10000, t
 hyperparameters.add_argument("-mom", "--momentum", default=0, type=float, help="If optimizer is set to SGD, initialize the optimizer with Nesterov momentum of this value if given")
 hyperparameters.add_argument("-wd", "--weight_decay", default=0, type=float, help="If given, set the weight decay for the optimizer to this value")
 hyperparameters.add_argument("-ls", "--label_smoothing", default=0, type=float, help="If given, set the label smoothing parameter to this value")
-hyperparameters.add_argument("--seed", default=123, type=int, help="Random seed for operations including randomness (e.g. shuffling)")
-hyperparameters.add_argument("--split", default=0.3, type=float, help="Portion of the full dataset to reserve for validation")
 
 # Specify the architecture for the given experiment if training procedure is set
 architecture = parser.add_argument_group("Architecture")
@@ -320,17 +393,13 @@ def main(args):
         # Adjust the number of input channels for the trainable layers based on grayscale layer presence
         channels = 1 if "G" in args.preprocessing_layers else 3
 
-        # Optimize the input layer for sparse tensors based on thresholding layer presence
-        thresholded = True if "T" in args.preprocessing_layers else False
-
         # Build the model according to given instructions
         trainable = build_model(inp_shape=[img_size,
                                            img_size,
                                            channels],
                                 output_size=len(gestures),
                                 instructions=args.architecture,
-                                name="trainable_layers",
-                                sparse_input=thresholded)
+                                name="trainable_layers")
 
         # Merge the preprocessing pipeline with the trainable layers
         model = tf.keras.Model(inputs=preprocessing.input,
@@ -353,10 +422,9 @@ def main(args):
 
         # Compile the optimizer according to given instructions
         if args.optimizer == "adam":
-            optimizer = tf.keras.optimizers.AdamW(learning_rate=lr,
-                                                  weight_decay=wd,
-                                                  exclude_from_weight_decay=["bias"],
-                                                  jit_compile=False)
+            optimizer = tfa.optimizers.AdamW(learning_rate=lr,
+                                             weight_decay=wd,
+                                             exclude_from_weight_decay=["bias"])
         elif args.optimizer == "SGD":
             optimizer = tfa.optimizers.SGDW(learning_rate=lr,
                                             momentum=args.momentum,
@@ -445,7 +513,6 @@ def main(args):
         try:
             model = tf.keras.models.load_model(filepath=config["Model"]["Current model"],
                                                custom_objects={"AdaptiveThresholding": AdaptiveThresholding,
-                                                               "Blurring": Blurring,
                                                                "Grayscale": Grayscale})
         except IOError:
             print("The prediction procedure was chosen but model cannot be found",
