@@ -475,10 +475,10 @@ def main(args):
                    overwrite=True)
 
         # Measure the approximate time per gesture prediction for the given model
-        n_gestures = 10
+        n_gestures = 50
         start = default_timer()
         for rnd in range(n_gestures):
-            model(tf.random.uniform(shape=[1, img_size, img_size, channels],
+            model(tf.random.uniform(shape=[1, img_size, img_size, 3],
                                     minval=0,
                                     maxval=255,
                                     seed=args.seed),
