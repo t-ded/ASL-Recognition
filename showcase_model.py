@@ -11,7 +11,6 @@ and possibly the model predictions.
 import os
 import re
 import warnings
-import numpy as np
 import cv2
 import tensorflow as tf
 from timeit import default_timer

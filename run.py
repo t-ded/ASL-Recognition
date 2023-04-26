@@ -116,6 +116,7 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 import keras_cv
 import utils
+from timeit import default_timer
 from collect_dataset import collect_data
 from showcase_collect_preprocessing import showcase_preprocessing
 from showcase_model import showcase_model
@@ -473,6 +474,18 @@ def main(args):
         model.save(filepath=save_dir,
                    overwrite=True)
 
+        # Measure the approximate time per gesture prediction for the given model
+        n_gestures = 10
+        start = default_timer()
+        for rnd in range(n_gestures):
+            model(tf.random.uniform(shape=[1, img_size, img_size, channels],
+                                    minval=0,
+                                    maxval=255,
+                                    seed=args.seed),
+                  training=False)
+
+        tpg = round((default_timer() - start) / n_gestures, 3) * 1000
+
         # Save the model architecture in a text file as well for easy access
         with open(os.path.join(save_dir, "model_summary.txt"), "a+") as file:
             file.write("Preprocessing pipeline:\n")
@@ -490,6 +503,7 @@ def main(args):
             file.write("Final validation recall: " + str(history.history["val_recall"][-1]) + "\n")
             file.write("Final training f1_score: " + "\n" + str(history.history["f1_score"][-1]) + "\n")
             file.write("Final validation f1_score: " + "\n" + str(history.history["val_f1_score"][-1]) + "\n")
+            file.write("Time per gesture prediction: " + "\n" + str(tpg) + " ms" + "\n")
             file.write("\n\n")
             file.write("Command line arguments: " + "\n")
             for arg in vars(args):
