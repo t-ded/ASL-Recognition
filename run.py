@@ -123,6 +123,9 @@ from showcase_model import showcase_model
 from model.preprocessing import Grayscale, AdaptiveThresholding, image_augmentation, ConfusionMatrixCallback
 from model.model import build_model, build_preprocessing
 
+# Report only TF errors by default
+# os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
+
 parser = argparse.ArgumentParser(allow_abbrev=False)
 parser.add_argument("--config_dir", default="", type=str, help="Directory with the config.json file")
 
@@ -241,6 +244,10 @@ def main(args):
 
         print("Starting the model training process")
 
+        # Initialize the distributed strategy
+        mirrored_strategy = tf.distribute.MirroredStrategy()
+        print(f"Number of available devices for training: {mirrored_strategy.num_replicas_in_sync}")
+
         # Set threading options to autotuning
         tf.config.threading.set_inter_op_parallelism_threads(0)
         tf.config.threading.set_intra_op_parallelism_threads(0)
@@ -297,6 +304,9 @@ def main(args):
         # Optically indent the preparation from actual model building
         utils.indent()
 
+        # Adjust the batch size when training on multiple GPUs
+        args.batch_size = args.batch_size * mirrored_strategy.num_replicas_in_sync
+
         # Loading the training and testing datasets from directories and optimizing them for performance
         train_images, test_images = tf.keras.preprocessing.image_dataset_from_directory(data_dir,
                                                                                         labels="inferred",
@@ -315,7 +325,7 @@ def main(args):
         if args.augmentation:
             augmentation_model = image_augmentation(seed=args.seed)
             train_images = train_images.map(lambda x, y: (augmentation_model(x, training=True), y),
-                                            num_parallel_calls=tf.data.AUTOTUNE).prefetch(buffer_size=tf.data.AUTOTUNE)
+                                            num_parallel_calls=tf.data.AUTOTUNE).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
 
         elif args.randaugment:
             try:
@@ -326,12 +336,12 @@ def main(args):
                                                                  magnitude=m / 100,
                                                                  seed=args.seed)
                 train_images = train_images.map(lambda x, y: (augmentation_model(x), y),
-                                                num_parallel_calls=tf.data.AUTOTUNE).prefetch(buffer_size=tf.data.AUTOTUNE)
+                                                num_parallel_calls=tf.data.AUTOTUNE).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
             except ValueError:
                 print("Invalid input was given for the parameters of the RandAugment transformation, omitting augmentation and continuing the process.")
 
         else:
-            train_images = train_images.prefetch(buffer_size=tf.data.AUTOTUNE)
+            train_images = train_images.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
         test_images = test_images.prefetch(buffer_size=tf.data.AUTOTUNE)
 
         # Set up the log directories for checkpoints and tensorboard
@@ -380,73 +390,76 @@ def main(args):
         if args.preprocessing_layers is None:
             args.preprocessing_layers = config["Model"]["Default preprocessing"]
 
-        # Build the preprocessing pipeline according to given instructions
-        preprocessing = build_preprocessing(inp_shape=[img_size,
-                                                       img_size,
-                                                       3],
-                                            instructions=args.preprocessing_layers,
-                                            name="preprocessing_pipeline")
+        # Ensure distribution of the model across the available GPUs during training
+        with mirrored_strategy.scope():
 
-        # Set the default model architecture if not specified
-        if args.architecture is None:
-            args.architecture = config["Model"]["Default architecture"]
+            # Build the preprocessing pipeline according to given instructions
+            preprocessing = build_preprocessing(inp_shape=[img_size,
+                                                           img_size,
+                                                           3],
+                                                instructions=args.preprocessing_layers,
+                                                name="preprocessing_pipeline")
 
-        # Adjust the number of input channels for the trainable layers based on grayscale layer presence
-        channels = 1 if "G" in args.preprocessing_layers else 3
+            # Set the default model architecture if not specified
+            if args.architecture is None:
+                args.architecture = config["Model"]["Default architecture"]
 
-        # Build the model according to given instructions
-        trainable = build_model(inp_shape=[img_size,
-                                           img_size,
-                                           channels],
-                                output_size=len(gestures),
-                                instructions=args.architecture,
-                                name="trainable_layers")
+            # Adjust the number of input channels for the trainable layers based on grayscale layer presence
+            channels = 1 if "G" in args.preprocessing_layers else 3
 
-        # Merge the preprocessing pipeline with the trainable layers
-        model = tf.keras.Model(inputs=preprocessing.input,
-                               outputs=trainable(preprocessing.output),
-                               name="full_model")
+            # Build the model according to given instructions
+            trainable = build_model(inp_shape=[img_size,
+                                               img_size,
+                                               channels],
+                                    output_size=len(gestures),
+                                    instructions=args.architecture,
+                                    name="trainable_layers")
 
-        # Set up the learning rate exponential decay schedule if the decay rate given
-        lr = args.learning_rate
-        wd = args.weight_decay
-        if 0 < args.lr_decay < 1:
-            lr = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=lr,
-                                                                decay_steps=args.lr_decay_iterations,
-                                                                decay_rate=args.lr_decay)
+            # Merge the preprocessing pipeline with the trainable layers
+            model = tf.keras.Model(inputs=preprocessing.input,
+                                   outputs=trainable(preprocessing.output),
+                                   name="full_model")
 
-            # If applying learning rate decay schedule alongside weight decay,
-            # the weight decay parameter also needs to be updated accordingly
-            wd = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=wd,
-                                                                decay_steps=args.lr_decay_iterations,
-                                                                decay_rate=args.lr_decay)
+            # Set up the learning rate exponential decay schedule if the decay rate given
+            lr = args.learning_rate
+            wd = args.weight_decay
+            if 0 < args.lr_decay < 1:
+                lr = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=lr,
+                                                                    decay_steps=args.lr_decay_iterations,
+                                                                    decay_rate=args.lr_decay)
 
-        # Compile the optimizer according to given instructions
-        if args.optimizer == "adam":
-            optimizer = tfa.optimizers.AdamW(learning_rate=lr,
-                                             weight_decay=wd,
-                                             exclude_from_weight_decay=["bias"])
-        elif args.optimizer == "SGD":
-            optimizer = tfa.optimizers.SGDW(learning_rate=lr,
-                                            momentum=args.momentum,
-                                            nesterov=True,
-                                            weight_decay=wd,
-                                            exclude_from_weight_decay=["bias"])
+                # If applying learning rate decay schedule alongside weight decay,
+                # the weight decay parameter also needs to be updated accordingly
+                wd = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=wd,
+                                                                    decay_steps=args.lr_decay_iterations,
+                                                                    decay_rate=args.lr_decay)
 
-        # Compile the model with cross-entropy loss, selected metrics and set up optimizer
-        model.compile(optimizer=optimizer,
-                      loss=tf.keras.losses.CategoricalCrossentropy(from_logits=False,
-                                                                   label_smoothing=args.label_smoothing),
-                      metrics=[tf.keras.metrics.CategoricalAccuracy(name="accuracy"),
-                               tf.keras.metrics.Recall(name="recall"),
-                               tf.keras.metrics.Precision(name="precision"),
-                               tfa.metrics.F1Score(len(gestures),
-                                                   average="macro",
-                                                   name="f1_score"),
-                               tf.keras.metrics.AUC(name="auc",
-                                                    multi_label=True,
-                                                    num_labels=len(gestures),
-                                                    from_logits=False)])
+            # Compile the optimizer according to given instructions
+            if args.optimizer == "adam":
+                optimizer = tfa.optimizers.AdamW(learning_rate=lr,
+                                                 weight_decay=wd,
+                                                 exclude_from_weight_decay=["bias"])
+            elif args.optimizer == "SGD":
+                optimizer = tfa.optimizers.SGDW(learning_rate=lr,
+                                                momentum=args.momentum,
+                                                nesterov=True,
+                                                weight_decay=wd,
+                                                exclude_from_weight_decay=["bias"])
+
+            # Compile the model with cross-entropy loss, selected metrics and set up optimizer
+            model.compile(optimizer=optimizer,
+                          loss=tf.keras.losses.CategoricalCrossentropy(from_logits=False,
+                                                                       label_smoothing=args.label_smoothing),
+                          metrics=[tf.keras.metrics.CategoricalAccuracy(name="accuracy"),
+                                   tf.keras.metrics.Recall(name="recall"),
+                                   tf.keras.metrics.Precision(name="precision"),
+                                   tfa.metrics.F1Score(len(gestures),
+                                                       average="macro",
+                                                       name="f1_score"),
+                                   tf.keras.metrics.AUC(name="auc",
+                                                        multi_label=True,
+                                                        num_labels=len(gestures),
+                                                        from_logits=False)])
 
         # Show summaries for all the models
         utils.indent(n=2)
@@ -524,6 +537,10 @@ def main(args):
 
         print("Starting model demonstration process")
 
+        # Set threading options to autotuning
+        tf.config.threading.set_inter_op_parallelism_threads(0)
+        tf.config.threading.set_intra_op_parallelism_threads(0)
+
         try:
             model = tf.keras.models.load_model(filepath=config["Model"]["Current model"],
                                                custom_objects={"AdaptiveThresholding": AdaptiveThresholding,
@@ -535,9 +552,6 @@ def main(args):
                   "Eventually, this can be resolved by running the train procedure with experiment number specified as -1.\n")
             print("Terminating the prediction process.")
             return
-
-        tf.config.threading.set_inter_op_parallelism_threads(0)
-        tf.config.threading.set_intra_op_parallelism_threads(0)
 
         showcase_model(gestures, examples=example_dir,
                        predict=True, model=model,
