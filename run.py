@@ -305,7 +305,8 @@ def main(args):
         utils.indent()
 
         # Adjust the batch size when training on multiple GPUs
-        args.batch_size = args.batch_size * mirrored_strategy.num_replicas_in_sync
+        if mirrored_strategy.num_replicas_in_sync:
+            args.batch_size = args.batch_size * mirrored_strategy.num_replicas_in_sync
 
         # Loading the training and testing datasets from directories and optimizing them for performance
         train_images, test_images = tf.keras.preprocessing.image_dataset_from_directory(data_dir,
