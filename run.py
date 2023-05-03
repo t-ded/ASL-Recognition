@@ -536,6 +536,9 @@ def main(args):
             print("Terminating the prediction process.")
             return
 
+        tf.config.threading.set_inter_op_parallelism_threads(0)
+        tf.config.threading.set_intra_op_parallelism_threads(0)
+
         showcase_model(gestures, examples=example_dir,
                        predict=True, model=model,
                        translations=config["Paths"]["Translations"],
