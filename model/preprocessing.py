@@ -380,6 +380,3 @@ def image_augmentation(seed=123, rot_factor=0.03,
     )
 
     return augmentation
-
-
-
