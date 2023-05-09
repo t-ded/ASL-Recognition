@@ -189,7 +189,7 @@ def collect_data(gesture_list, examples="Examples", data_directory="Data",
 
                 # Live view with frame and text (colorcoded as specified above)
                 cv2.rectangle(frame, rect[0], rect[3], color, 2)
-                txt = gesture.capitalize()
+                txt = gesture
                 if not lang:
                     txt = dictionary[txt]
                 cv2.putText(frame, txt, (rect[0][0], rect[0][1] - 15),
