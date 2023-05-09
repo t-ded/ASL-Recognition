@@ -60,7 +60,7 @@ def showcase_preprocessing(inp_shape):
                         "I,G,T-tm-b7-c(3)",
                         "I,G,T-tg-b3-c(3)",
                         "I,G,T-tg-b5-c(3)",
-                        "I,G,T-tg-b5-c(3)"]
+                        "I,G,T-tg-b7-c(3)"]
 
         # Setting up preprocessing sequential pipelines
         pipelines_list = [build_preprocessing(inp_shape=inp_shape,

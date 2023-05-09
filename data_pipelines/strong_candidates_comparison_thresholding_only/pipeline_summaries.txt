@@ -138,7 +138,7 @@ _________________________________________________________________
 
 {'batch_input_shape': (None, 196, 196, 3), 'dtype': 'float32', 'sparse': False, 'ragged': False, 'name': 'preprocessing_input'}
 {'name': 'grayscale_5', 'trainable': False, 'dtype': 'float32'}
-{'name': 'adaptive_thresholding_5', 'trainable': False, 'dtype': 'float32', 'thresholding_type': 'gaussian', 'block_size': 5, 'constant': 3.0}
+{'name': 'adaptive_thresholding_5', 'trainable': False, 'dtype': 'float32', 'thresholding_type': 'gaussian', 'block_size': 7, 'constant': 3.0}
 
 
 
