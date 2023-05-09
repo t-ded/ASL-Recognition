@@ -10,7 +10,7 @@ and then possibly saves these into given folders for comparison.
 
 import os
 import cv2
-from tensorflow import expand_dims, convert_to_tensor, uint8
+from tensorflow import uint8, cast
 from utils import create_rectangle, new_folder
 from model.model import build_preprocessing
 
@@ -96,12 +96,9 @@ def showcase_preprocessing(inp_shape):
             frame_cut = frame[(rect[0][1] + 2):(rect[2][1] - 2),
                               (rect[0][0] + 2):(rect[1][0] - 2)]
             frame_cut = cv2.resize(frame_cut, (img_size, img_size))
-            frame_cut_tensor = expand_dims(convert_to_tensor(frame_cut,
-                                                             dtype=uint8),
-                                           axis=0)
 
             # Obtain results from different preprocessing pipelines
-            results_list = [pipeline(frame_cut_tensor) for pipeline in pipelines_list]
+            results_list = [cast(pipeline(frame_cut[None, :]), uint8) for pipeline in pipelines_list]
 
             # Live view with frame
             cv2.rectangle(frame, rect[0], rect[3], (0, 255, 0), 2)
@@ -135,8 +132,7 @@ def showcase_preprocessing(inp_shape):
                 new_folder(save_name)
                 coloured_path = r"%s" % os.path.join(save_name,
                                                      "coloured.jpg")
-                if not cv2.imwrite(coloured_path,
-                                   frame_cut_tensor.numpy()[0, :, :, :]):
+                if not cv2.imwrite(coloured_path, frame_cut):
                     print("Something went wrong during this save attempt:",
                           f"coloured_{save_counter + 1}")
 
