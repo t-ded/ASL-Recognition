@@ -75,7 +75,11 @@ class AdaptiveThresholding(tf.keras.layers.Layer):
                                 padding="SAME")
 
             # Mask and threshold the input batch by the means
-            return tf.where(input_batch <= mean - self.constant, 255, 0)
+            # Transpose for effective NHWC <-> NCHW conversion during TensorFlow's training
+            return tf.transpose(tf.where(tf.transpose(input_batch <= mean - self.constant,
+                                                      perm=[0, 3, 1, 2]),
+                                         255, 0),
+                                perm=[0, 2, 3, 1])
 
         else:
 
@@ -85,7 +89,11 @@ class AdaptiveThresholding(tf.keras.layers.Layer):
                                                             filter_shape=self.block_size)
 
             # Mask and threshold the input batch by the gaussian weighted sums
-            return tf.where(input_batch <= gaussian_weighted - self.constant, 255, 0)
+            # Transpose for effective NHWC <-> NCHW conversion during TensorFlow's training
+            return tf.transpose(tf.where(tf.transpose(input_batch <= gaussian_weighted - self.constant,
+                                                      perm=[0, 3, 1, 2]),
+                                         255, 0),
+                                perm=[0, 2, 3, 1])
 
     def compute_output_shape(self, input_shape):
         """
@@ -157,6 +165,90 @@ class Grayscale(tf.keras.layers.Layer):
         """
 
         return super(Grayscale, self).get_config()
+
+
+class LinearWarmupCallback(tf.keras.callbacks.Callback):
+    """
+    A callback to linearly, gradually ramp up the learning rate during
+    early stages of training
+
+    Methods:
+        adjust_lr(global_step, warmup_step, total_steps, start_lr, target_lr)
+            Determine the value for the learning rate at given point in training
+        on_training_batch_end(batch, logs)
+            Operations performed at the end of every batch with the result possibly saved to the logdir
+        on_training_batch_start(batch, logs)
+            Operations performed at the start of every batch with the result possibly saved to the logdir
+    """
+
+    def __init__(self, warmup_steps=0,
+                 start_lr=0.0, target_lr=0.01, **kwargs):
+        """
+
+        Parameters:
+            warmup_steps: int (default 0)
+                Number of steps in which to go from start_lr to target_lr
+            start_lr: float (default 0.0)
+                Learning rate to use as the initial one
+            target_lr: float (default 0.01)
+                Learning rate to which to get in warmup_steps from start_lr
+            **kwargs:
+                Keyword arguments inherited from the tf.keras.callbacks.Callback class
+        """
+
+        super(LinearWarmupCallback, self).__init__()
+        self.warmup_steps = warmup_steps
+        self.start_lr = start_lr
+        self.target_lr = target_lr
+        self.global_step = 0
+
+        # Set up the list of learning rates for the early steps
+        if self.warmup_steps <= 0:
+            self.lrs = [target_lr]
+        else:
+            self.lrs = tf.linspace(self.start_lr, self.target_lr, self.warmup_steps + 1)
+
+    def on_train_batch_end(self, batch, logs=None):
+        """Operations to perform at the beginning of the given batch"""
+
+        self.global_step = self.global_step + 1
+
+    def on_train_batch_begin(self, batch, logs=None):
+        """Operations to perform at the end of the given batch"""
+
+        # Update the learning rate in early stages only
+        if self.global_step <= self.warmup_steps:
+            lr = self.lrs[self.global_step]
+            tf.keras.backend.set_value(self.model.optimizer.lr, lr)
+
+
+class LRTensorBoardCallback(tf.keras.callbacks.TensorBoard):
+    """
+    A callback to log the learning rate to TensorBoard
+
+    Methods:
+        on_epoch_end(epoch, logs)
+            Operations performed at the end of every epoch with the result possibly saved to the logdir
+    """
+
+    def __init__(self, logs=None, **kwargs):
+        """
+
+        Parameters:
+            logs: str (default None)
+                If given, log the learning rate to the logs directory to visualize in TensorBoard
+            **kwargs:
+                Keyword arguments inherited from the tf.keras.callbacks.Callback class
+        """
+
+        super().__init__(log_dir=logs, **kwargs)
+
+    def on_epoch_end(self, epoch, logs=None):
+        """Operations to perform at the end of the given epoch"""
+
+        logs = logs or {}
+        logs.update({"lr": tf.keras.backend.eval(self.model.optimizer.lr)})
+        super().on_epoch_end(epoch, logs)
 
 
 class ConfusionMatrixCallback(tf.keras.callbacks.Callback):
@@ -288,3 +380,6 @@ def image_augmentation(seed=123, rot_factor=0.03,
     )
 
     return augmentation
+
+
+

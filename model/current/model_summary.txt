@@ -40,38 +40,34 @@ _________________________________________________________________
                                                                  
  flatten (Flatten)           (None, 30976)             0         
                                                                  
- dense (Dense)               (None, 120)               3717120   
+ dense (Dense)               (None, 256)               7929856   
                                                                  
- batch_normalization (BatchN  (None, 120)              480       
+ batch_normalization (BatchN  (None, 256)              1024      
  ormalization)                                                   
                                                                  
- re_lu (ReLU)                (None, 120)               0         
+ re_lu (ReLU)                (None, 256)               0         
                                                                  
- dense_1 (Dense)             (None, 84)                10164     
-                                                                 
- softmax_output (Dense)      (None, 49)                4165      
+ softmax_output (Dense)      (None, 49)                12593     
                                                                  
 =================================================================
-Total params: 4,554,713
-Trainable params: 4,554,473
-Non-trainable params: 240
+Total params: 8,766,257
+Trainable params: 8,765,745
+Non-trainable params: 512
 _________________________________________________________________
 
 
 
 Training parameters: {'verbose': 1, 'epochs': 30, 'steps': 510}
-Final training accuracy: 0.8401207327842712
-Final validation accuracy: 0.936898946762085
-Final training precision: 0.935442328453064
-Final validation precision: 0.9696096777915955
-Final training recall: 0.7674817442893982
-Final validation recall: 0.9022558927536011
+Final training accuracy: 0.9356192946434021
+Final validation accuracy: 0.9777626991271973
+Final training precision: 0.963410496711731
+Final validation precision: 0.9842992424964905
+Final training recall: 0.9185818433761597
+Final validation recall: 0.9727217555046082
 Final training f1_score: 
-0.8399868607521057
+0.935704231262207
 Final validation f1_score: 
-0.9375088810920715
-Time per gesture prediction: 
-22.0 ms
+0.9778944253921509
 
 
 Command line arguments: 
@@ -82,7 +78,7 @@ train: True
 showcase: False
 predict: False
 guided: False
-experiment: 52
+experiment: 61
 tensorboard: True
 early_stopping: loss
 disable_checkpoint: True
@@ -99,5 +95,5 @@ lr_decay_iterations: 10000
 momentum: 0.95
 weight_decay: 0.0003
 label_smoothing: 0
-architecture: I,C-k5-f128-s1,P-tm-p3-s4,C-k5-f256-s1,P-tm-p3-s4,H-120,B,H-84,O
-preprocessing_layers: I,G,T-tg-b7-c(3),R
+architecture: I,C-k5-f128-s1,P-tm-p3-s4,C-k5-f256-s1,P-tm-p3-s4,H-256,B,O
+preprocessing_layers: I,G,T-tm-b7-c(3),R

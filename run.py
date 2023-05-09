@@ -116,15 +116,14 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 import keras_cv
 import utils
-from timeit import default_timer
 from collect_dataset import collect_data
 from showcase_collect_preprocessing import showcase_preprocessing
 from showcase_model import showcase_model
-from model.preprocessing import Grayscale, AdaptiveThresholding, image_augmentation, ConfusionMatrixCallback
+from model.preprocessing import Grayscale, AdaptiveThresholding, image_augmentation, ConfusionMatrixCallback, LinearWarmupCallback, LRTensorBoardCallback
 from model.model import build_model, build_preprocessing
 
 # Report only TF errors by default
-# os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "2")
+tf.get_logger().setLevel("ERROR")
 
 parser = argparse.ArgumentParser(allow_abbrev=False)
 parser.add_argument("--config_dir", default="", type=str, help="Directory with the config.json file")
@@ -163,8 +162,8 @@ hyperparameters.add_argument("-bs", "--batch_size", default=128, type=int, help=
 hyperparameters.add_argument("-e", "--epochs", default=10, type=int, help="Number of epochs")
 hyperparameters.add_argument("-opt", "--optimizer", default="adam", choices=["adam", "SGD"], help="Optimizer for training")
 hyperparameters.add_argument("-lr", "--learning_rate", default=0.01, type=float, help="Starting learning rate")
-hyperparameters.add_argument("-lrd", "--lr_decay", default=1, type=float, help="If given, this constant will be used for exponential learning rate decay after every --lr_decay_iterations iterations")
-hyperparameters.add_argument("-lrdit", "--lr_decay_iterations", default=10000, type=int, help="Specify the number of iterations that will substite one step for learning rate decay")
+hyperparameters.add_argument("-lrd", "--lr_decay", action="store_true", help="If given, reduce the learning rate by a factor of 10 up to 3 times over training")
+hyperparameters.add_argument("-lrw", "--lr_warmup", action="store_true", help="If given, apply linear learning rate warmup throughout the first stages of training")
 hyperparameters.add_argument("-mom", "--momentum", default=0, type=float, help="If optimizer is set to SGD, initialize the optimizer with Nesterov momentum of this value if given")
 hyperparameters.add_argument("-wd", "--weight_decay", default=0, type=float, help="If given, set the weight decay for the optimizer to this value")
 hyperparameters.add_argument("-ls", "--label_smoothing", default=0, type=float, help="If given, set the label smoothing parameter to this value")
@@ -244,13 +243,14 @@ def main(args):
 
         print("Starting the model training process")
 
-        # Initialize the distributed strategy
-        mirrored_strategy = tf.distribute.MirroredStrategy()
-        print(f"Number of available devices for training: {mirrored_strategy.num_replicas_in_sync}")
-
         # Set threading options to autotuning
         tf.config.threading.set_inter_op_parallelism_threads(0)
         tf.config.threading.set_intra_op_parallelism_threads(0)
+
+        # Initialize the distributed strategy and silence outputs
+        mirrored_strategy = tf.distribute.MirroredStrategy()
+        tf.debugging.set_log_device_placement(False)
+        print(f"Number of available devices for training: {mirrored_strategy.num_replicas_in_sync}")
 
         # Cover the case where the user wishes to save the model as current
         if args.experiment == -1:
@@ -304,9 +304,10 @@ def main(args):
         # Optically indent the preparation from actual model building
         utils.indent()
 
-        # Adjust the batch size when training on multiple GPUs
-        if mirrored_strategy.num_replicas_in_sync:
+        # Adjust the batch size
+        if mirrored_strategy.num_replicas_in_sync > 1:
             args.batch_size = args.batch_size * mirrored_strategy.num_replicas_in_sync
+            args.learning_rate = args.learning_rate * mirrored_strategy.num_replicas_in_sync
 
         # Loading the training and testing datasets from directories and optimizing them for performance
         train_images, test_images = tf.keras.preprocessing.image_dataset_from_directory(data_dir,
@@ -322,11 +323,14 @@ def main(args):
                                                                                         validation_split=args.split,
                                                                                         subset="both")
 
+        # Save length of the training dataset for purposes of adjusting learning rate warm-up
+        train_length = train_images.cardinality()
+
         # Apply given augmentation pipeline
         if args.augmentation:
             augmentation_model = image_augmentation(seed=args.seed)
             train_images = train_images.map(lambda x, y: (augmentation_model(x, training=True), y),
-                                            num_parallel_calls=tf.data.AUTOTUNE).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+                                            num_parallel_calls=tf.data.AUTOTUNE)
 
         elif args.randaugment:
             try:
@@ -337,21 +341,41 @@ def main(args):
                                                                  magnitude=m / 100,
                                                                  seed=args.seed)
                 train_images = train_images.map(lambda x, y: (augmentation_model(x), y),
-                                                num_parallel_calls=tf.data.AUTOTUNE).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+                                                num_parallel_calls=tf.data.AUTOTUNE)
             except ValueError:
                 print("Invalid input was given for the parameters of the RandAugment transformation, omitting augmentation and continuing the process.")
 
-        else:
-            train_images = train_images.cache().prefetch(buffer_size=tf.data.AUTOTUNE)
-        test_images = test_images.prefetch(buffer_size=tf.data.AUTOTUNE)
+        # Set distributed sharding policy for cases when using multiple GPUs
+        options = tf.data.Options()
+        options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
+
+        train_images = train_images.with_options(options).prefetch(buffer_size=tf.data.AUTOTUNE)
+        test_images = test_images.with_options(options).prefetch(buffer_size=tf.data.AUTOTUNE)
 
         # Set up the log directories for checkpoints and tensorboard
         cp_path = os.path.join(save_dir, "ckpt/cp-{epoch:03d}.ckpt")
         tb_path = os.path.join(config["Paths"]["Logs"],
                                "{}".format(datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")))
 
-        # Create callbacks for the model to save progress during training if specified
+        # Create callbacks for the model to influence progress during training if specified
         callbacks = []
+
+        # Add functionality to log learning rate (optionally to TensorBoard)
+        callbacks.append(LRTensorBoardCallback(logs=tb_path + "/lr" if args.tensorboard else None))
+
+        # Learning rate warm-up (see Goyal, Dollár et al.) when training on multiple GPUs
+        if mirrored_strategy.num_replicas_in_sync > 1:
+            lr_warmup_callback = LinearWarmupCallback(warmup_steps=5 * train_length,
+                                                      start_lr=0.0,
+                                                      target_lr=args.learning_rate)
+            callbacks.append(lr_warmup_callback)
+
+        # Learning rate warm-up when prompted by the user
+        elif args.lr_warmup:
+            lr_warmup_callback = LinearWarmupCallback(warmup_steps=5 * train_length,
+                                                      start_lr=0.0,
+                                                      target_lr=args.learning_rate)
+            callbacks.append(lr_warmup_callback)
 
         # Checkpoint callback (optional, default is to include)
         if not args.disable_checkpoint:
@@ -364,10 +388,11 @@ def main(args):
         # TensorBoard + confusion matrix callback (optional, default is to not include)
         if args.tensorboard:
             tb_callback = tf.keras.callbacks.TensorBoard(log_dir=tb_path,
-                                                         histogram_freq=1)
+                                                         histogram_freq=5,
+                                                         write_graph=False)
             callbacks.append(tb_callback)
 
-            # Add functionality to save log confusion matrices
+            # Add functionality to log confusion matrices
             writer = tf.summary.create_file_writer(logdir=tb_path + "/cm")
             cm_callback = ConfusionMatrixCallback(writer,
                                                   gesture_list=gestures,
@@ -422,29 +447,28 @@ def main(args):
                                    name="full_model")
 
             # Set up the learning rate exponential decay schedule if the decay rate given
-            lr = args.learning_rate
-            wd = args.weight_decay
-            if 0 < args.lr_decay < 1:
-                lr = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=lr,
-                                                                    decay_steps=args.lr_decay_iterations,
-                                                                    decay_rate=args.lr_decay)
+            if args.lr_decay:
 
-                # If applying learning rate decay schedule alongside weight decay,
-                # the weight decay parameter also needs to be updated accordingly
-                wd = tf.keras.optimizers.schedules.ExponentialDecay(initial_learning_rate=wd,
-                                                                    decay_steps=args.lr_decay_iterations,
-                                                                    decay_rate=args.lr_decay)
+                # Function to reduce learning rate by a factor of 10 every n_epochs epochs up to 2 times
+                n_epochs = int(tf.math.ceil(args.epochs / 3))
+
+                def lr_decay(epoch, lr):
+                    if epoch % n_epochs == 0 and epoch > 0:
+                        return lr * 0.1
+                    return lr
+
+                callbacks.append(tf.keras.callbacks.LearningRateScheduler(lr_decay))
 
             # Compile the optimizer according to given instructions
             if args.optimizer == "adam":
-                optimizer = tfa.optimizers.AdamW(learning_rate=lr,
-                                                 weight_decay=wd,
+                optimizer = tfa.optimizers.AdamW(learning_rate=args.learning_rate,
+                                                 weight_decay=args.weight_decay,
                                                  exclude_from_weight_decay=["bias"])
             elif args.optimizer == "SGD":
-                optimizer = tfa.optimizers.SGDW(learning_rate=lr,
+                optimizer = tfa.optimizers.SGDW(learning_rate=args.learning_rate,
                                                 momentum=args.momentum,
                                                 nesterov=True,
-                                                weight_decay=wd,
+                                                weight_decay=args.weight_decay,
                                                 exclude_from_weight_decay=["bias"])
 
             # Compile the model with cross-entropy loss, selected metrics and set up optimizer
@@ -488,18 +512,6 @@ def main(args):
         model.save(filepath=save_dir,
                    overwrite=True)
 
-        # Measure the approximate time per gesture prediction for the given model
-        n_gestures = 50
-        start = default_timer()
-        for rnd in range(n_gestures):
-            model(tf.random.uniform(shape=[1, img_size, img_size, 3],
-                                    minval=0,
-                                    maxval=255,
-                                    seed=args.seed),
-                  training=False)
-
-        tpg = round((default_timer() - start) / n_gestures, 3) * 1000
-
         # Save the model architecture in a text file as well for easy access
         with open(os.path.join(save_dir, "model_summary.txt"), "a+") as file:
             file.write("Preprocessing pipeline:\n")
@@ -517,7 +529,6 @@ def main(args):
             file.write("Final validation recall: " + str(history.history["val_recall"][-1]) + "\n")
             file.write("Final training f1_score: " + "\n" + str(history.history["f1_score"][-1]) + "\n")
             file.write("Final validation f1_score: " + "\n" + str(history.history["val_f1_score"][-1]) + "\n")
-            file.write("Time per gesture prediction: " + "\n" + str(tpg) + " ms" + "\n")
             file.write("\n\n")
             file.write("Command line arguments: " + "\n")
             for arg in vars(args):
