@@ -47,6 +47,11 @@ class AdaptiveThresholding(tf.keras.layers.Layer):
         self.block_size = block_size
         self.constant = constant
         self.trainable = False
+        if self.thresholding_type == "mean":
+            self.kernel = tf.ones([self.block_size,
+                                   self.block_size,
+                                   1,
+                                   1], dtype="float32") / (self.block_size ** 2)
 
     def call(self, input_batch):
         """
@@ -67,10 +72,7 @@ class AdaptiveThresholding(tf.keras.layers.Layer):
             # Obtain mean of each block per batch sample
             # via a convolution with an appropriate kernel
             mean = tf.nn.conv2d(input_batch,
-                                filters=tf.ones([self.block_size,
-                                                 self.block_size,
-                                                 1,
-                                                 1]) / (self.block_size ** 2),
+                                filters=self.kernel,
                                 strides=1,
                                 padding="SAME")
 

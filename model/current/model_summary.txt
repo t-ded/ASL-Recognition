@@ -47,27 +47,31 @@ _________________________________________________________________
                                                                  
  re_lu (ReLU)                (None, 256)               0         
                                                                  
- softmax_output (Dense)      (None, 49)                12593     
+ dense_1 (Dense)             (None, 512)               131584    
+                                                                 
+ output_dense (Dense)        (None, 49)                25137     
+                                                                 
+ softmax_output (Activation)  (None, 49)               0         
                                                                  
 =================================================================
-Total params: 8,766,257
-Trainable params: 8,765,745
+Total params: 8,910,385
+Trainable params: 8,909,873
 Non-trainable params: 512
 _________________________________________________________________
 
 
 
-Training parameters: {'verbose': 1, 'epochs': 30, 'steps': 510}
-Final training accuracy: 0.9356192946434021
-Final validation accuracy: 0.9777626991271973
-Final training precision: 0.963410496711731
-Final validation precision: 0.9842992424964905
-Final training recall: 0.9185818433761597
-Final validation recall: 0.9727217555046082
+Training parameters: {'verbose': 1, 'epochs': 100, 'steps': 128}
+Final training accuracy: 0.9675031900405884
+Final validation accuracy: 0.9905616641044617
+Final training precision: 0.9811862111091614
+Final validation precision: 0.9925025105476379
+Final training recall: 0.9588619470596313
+Final validation recall: 0.9891316294670105
 Final training f1_score: 
-0.935704231262207
+0.9674878120422363
 Final validation f1_score: 
-0.9778944253921509
+0.9906147718429565
 
 
 Command line arguments: 
@@ -78,22 +82,22 @@ train: True
 showcase: False
 predict: False
 guided: False
-experiment: 61
+experiment: 72
 tensorboard: True
-early_stopping: loss
+early_stopping: disable
 disable_checkpoint: True
 seed: 123
 split: 0.3
 augmentation: False
 randaugment: 10,3
-batch_size: 128
-epochs: 30
+batch_size: 512
+epochs: 100
 optimizer: SGD
-learning_rate: 0.01
-lr_decay: 1
-lr_decay_iterations: 10000
+learning_rate: 0.04
+lr_decay: True
+lr_warmup: False
 momentum: 0.95
 weight_decay: 0.0003
 label_smoothing: 0
-architecture: I,C-k5-f128-s1,P-tm-p3-s4,C-k5-f256-s1,P-tm-p3-s4,H-256,B,O
+architecture: I,C-k5-f128-s1,P-tm-p3-s4,C-k5-f256-s1,P-tm-p3-s4,H-256,B,H-512,O
 preprocessing_layers: I,G,T-tm-b7-c(3),R

@@ -342,15 +342,17 @@ def build_model(inp_shape, output_size, name="model",
                 hidden = tf.keras.layers.Flatten()(hidden)
                 flatten_flag = 1
 
+            # Add the output dense layer
+            hidden = tf.keras.layers.Dense(output_size,
+                                           activation=None,
+                                           name="output_dense")(hidden)
+
             # Adjust the output layer activation based on the output_size
+            # Specify dtype to avoid problems with numerical instability when using mixed precision
             if output_size == 1:
-                output = tf.keras.layers.Dense(1,
-                                               activation=tf.nn.sigmoid,
-                                               name="sigmoid_output")(hidden)
+                output = tf.keras.layers.Activation(tf.nn.sigmoid, dtype="float32", name="sigmoid_output")(hidden)
             else:
-                output = tf.keras.layers.Dense(output_size,
-                                               activation=tf.nn.softmax,
-                                               name="softmax_output")(hidden)
+                output = tf.keras.layers.Activation(tf.nn.softmax, dtype="float32", name="softmax_output")(hidden)
 
         # Invalid layer name
         else:

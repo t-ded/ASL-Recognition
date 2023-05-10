@@ -162,7 +162,7 @@ hyperparameters.add_argument("-bs", "--batch_size", default=128, type=int, help=
 hyperparameters.add_argument("-e", "--epochs", default=10, type=int, help="Number of epochs")
 hyperparameters.add_argument("-opt", "--optimizer", default="adam", choices=["adam", "SGD"], help="Optimizer for training")
 hyperparameters.add_argument("-lr", "--learning_rate", default=0.01, type=float, help="Starting learning rate")
-hyperparameters.add_argument("-lrd", "--lr_decay", action="store_true", help="If given, reduce the learning rate by a factor of 10 up to 3 times over training")
+hyperparameters.add_argument("-lrd", "--lr_decay", default=None, type=str, help="If given (in A,B,C,... format), reduce the learning rate by a factor of 10 after A, B, C, ... epochs")
 hyperparameters.add_argument("-lrw", "--lr_warmup", action="store_true", help="If given, apply linear learning rate warmup throughout the first stages of training")
 hyperparameters.add_argument("-mom", "--momentum", default=0, type=float, help="If optimizer is set to SGD, initialize the optimizer with Nesterov momentum of this value if given")
 hyperparameters.add_argument("-wd", "--weight_decay", default=0, type=float, help="If given, set the weight decay for the optimizer to this value")
@@ -243,9 +243,10 @@ def main(args):
 
         print("Starting the model training process")
 
-        # Set threading options to autotuning
+        # Set threading options to autotuning and use mixed precision to increase performance
         tf.config.threading.set_inter_op_parallelism_threads(0)
         tf.config.threading.set_intra_op_parallelism_threads(0)
+        # tf.keras.mixed_precision.set_global_policy("mixed_float16")
 
         # Initialize the distributed strategy and silence outputs
         mirrored_strategy = tf.distribute.MirroredStrategy()
@@ -349,8 +350,12 @@ def main(args):
         options = tf.data.Options()
         options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
 
-        train_images = train_images.with_options(options).prefetch(buffer_size=tf.data.AUTOTUNE)
-        test_images = test_images.with_options(options).prefetch(buffer_size=tf.data.AUTOTUNE)
+        # Using multiple GPUs to their full potential leads to too strong overfitting despite lr & batch size adjustments
+        if mirrored_strategy.num_replicas_in_sync > 1:
+            train_images = train_images.with_options(options).prefetch(buffer_size=tf.data.AUTOTUNE)
+        else:
+            train_images = train_images.with_options(options).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+        test_images = test_images.with_options(options).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
 
         # Set up the log directories for checkpoints and tensorboard
         cp_path = os.path.join(save_dir, "ckpt/cp-{epoch:03d}.ckpt")
@@ -359,9 +364,6 @@ def main(args):
 
         # Create callbacks for the model to influence progress during training if specified
         callbacks = []
-
-        # Add functionality to log learning rate (optionally to TensorBoard)
-        callbacks.append(LRTensorBoardCallback(logs=tb_path + "/lr" if args.tensorboard else None))
 
         # Learning rate warm-up (see Goyal, Dollár et al.) when training on multiple GPUs
         if mirrored_strategy.num_replicas_in_sync > 1:
@@ -398,6 +400,9 @@ def main(args):
                                                   gesture_list=gestures,
                                                   validation_data=test_images)
             callbacks.append(cm_callback)
+
+            # Add functionality to log learning rate
+            callbacks.append(LRTensorBoardCallback(logs=tb_path + "/lr"))
 
         # Early stopping callback (optional, default is to include)
         if args.early_stopping != "disable":
@@ -449,11 +454,11 @@ def main(args):
             # Set up the learning rate exponential decay schedule if the decay rate given
             if args.lr_decay:
 
-                # Function to reduce learning rate by a factor of 10 every n_epochs epochs up to 2 times
-                n_epochs = int(tf.math.ceil(args.epochs / 3))
+                # Function to reduce learning rate by a factor of 10 at given points
+                lrd_epochs = [int(ep) for ep in args.lr_decay.split(",")]
 
                 def lr_decay(epoch, lr):
-                    if epoch % n_epochs == 0 and epoch > 0:
+                    if epoch in lrd_epochs:
                         return lr * 0.1
                     return lr
 
