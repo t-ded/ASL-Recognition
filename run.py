@@ -61,9 +61,6 @@ Training parameters:
 
 Augmentation settings:
 
-    -aug (--augmentation)
-        If given, apply a simple augmentation pipeline.
-        The pipeline consists of slight random rotation, slight random translation and random horizontal flip.
     -raug (--randaugment) (default None)
         A set of two positive integers "M,N" that specifies the settings for the RandAugment augmentation pipeline.
         M decides the strngth of applied augmentations while N is the number of them in the pipeline.
@@ -79,12 +76,12 @@ Hyperparametes:
         One of "adam" or "SGD".
     -lr (--learning_rate) (default 0.01)
         A positive float that specifies the initial learning rate.
-    -lrd (--lr_decay) (default 1)
-        A positive float between 0 and 1 that specify the constant for the exponential learning rate decay.
-        The decay is also applied to the weight decay schedule.
-        1 corresponds to no decay.
-    -lrdit (--lr_decay_iterations) (default 10,000)
-        Positive integer that sets the number of iterations after which the learning rate decay step is applied.
+    -lrd (--lr_decay) (default None)
+        A list of positive integers separated by commas (e.g. 10,20,30).
+        The learning rate is reduced by a factor of 10 after each of these specified epochs.
+    -lrw (--lr_warmup)
+        If given, apply learning rate warm-up, that corresponds to gradual (per batch) linear learning rate
+        scaling throughout the first five epochs starting from zero.
     -mom (--momentum) (default 0)
         A positive float.
         The value of momentum to use for the SGD with momentum.
@@ -116,10 +113,11 @@ import tensorflow as tf
 import tensorflow_addons as tfa
 import keras_cv
 import utils
+from sklearn.metrics import classification_report
 from collect_dataset import collect_data
 from showcase_collect_preprocessing import showcase_preprocessing
 from showcase_model import showcase_model
-from model.preprocessing import Grayscale, AdaptiveThresholding, image_augmentation, ConfusionMatrixCallback, LinearWarmupCallback, LRTensorBoardCallback
+from model.preprocessing import Grayscale, AdaptiveThresholding, ConfusionMatrixCallback, LinearWarmupCallback, LRTensorBoardCallback
 from model.model import build_model, build_preprocessing
 
 # Report only TF errors by default
@@ -152,7 +150,6 @@ train_settings.add_argument("--split", default=0.3, type=float, help="Portion of
 
 # Specify augmentation type and settings for RandAugment
 augmentation_settings = parser.add_argument_group("Augmentation settings")
-augmentation_settings.add_argument("-aug", "--augmentation", action="store_true", help="If given, perform image augmentation on the training dataset")
 augmentation_settings.add_argument("-raug", "--randaugment", default=None, type=str, help="If given (in m,n format), pass the training dataset through the RandAugment pipeline with parameters m ((0, 100) range), n (positive int)")
 # TODO - Decide if this is a good approach # train_settings.add_argument("-efnet", "--efficient_net", action="store_true", help="If given, omit training of a new model and only finetune the output layers of the EfficientNetV2B0")
 
@@ -327,22 +324,19 @@ def main(args):
         # Save length of the training dataset for purposes of adjusting learning rate warm-up
         train_length = train_images.cardinality()
 
-        # Apply given augmentation pipeline
-        if args.augmentation:
-            augmentation_model = image_augmentation(seed=args.seed)
-            train_images = train_images.map(lambda x, y: (augmentation_model(x, training=True), y),
-                                            num_parallel_calls=tf.data.AUTOTUNE)
-
-        elif args.randaugment:
+        # Create RandAugment layer with given arguments if prompted to do so
+        if args.randaugment:
             try:
                 randaugment_params = args.randaugment.split(",")
                 m, n = int(randaugment_params[0]), int(randaugment_params[1])
                 augmentation_model = keras_cv.layers.RandAugment(value_range=[0, 255],
                                                                  augmentations_per_image=n,
                                                                  magnitude=m / 100,
-                                                                 seed=args.seed)
+                                                                 seed=args.seed,
+                                                                 name="RandAugment")
                 train_images = train_images.map(lambda x, y: (augmentation_model(x), y),
-                                                num_parallel_calls=tf.data.AUTOTUNE)
+                                                num_parallel_calls=tf.data.AUTOTUNE,
+                                                deterministic=False)
             except ValueError:
                 print("Invalid input was given for the parameters of the RandAugment transformation, omitting augmentation and continuing the process.")
 
@@ -350,11 +344,8 @@ def main(args):
         options = tf.data.Options()
         options.experimental_distribute.auto_shard_policy = tf.data.experimental.AutoShardPolicy.DATA
 
-        # Using multiple GPUs to their full potential leads to too strong overfitting despite lr & batch size adjustments
-        if mirrored_strategy.num_replicas_in_sync > 1:
-            train_images = train_images.with_options(options).prefetch(buffer_size=tf.data.AUTOTUNE)
-        else:
-            train_images = train_images.with_options(options).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
+        # To use multiple GPUs to their full potential, we need to prefetch the datasets
+        train_images = train_images.with_options(options).prefetch(buffer_size=tf.data.AUTOTUNE)
         test_images = test_images.with_options(options).cache().prefetch(buffer_size=tf.data.AUTOTUNE)
 
         # Set up the log directories for checkpoints and tensorboard
@@ -517,6 +508,13 @@ def main(args):
         model.save(filepath=save_dir,
                    overwrite=True)
 
+        # Generate the full classification report
+        predictions = model.predict(test_images.map(lambda x, y: x, num_parallel_calls=tf.data.AUTOTUNE, deterministic=True))
+        test_y = list(test_images.map(lambda x, y: y, num_parallel_calls=tf.data.AUTOTUNE, deterministic=True).unbatch().as_numpy_iterator())
+        report = classification_report(test_y,
+                                       tf.argmax(predictions, axis=1).numpy(),
+                                       target_names=gestures)
+
         # Save the model architecture in a text file as well for easy access
         with open(os.path.join(save_dir, "model_summary.txt"), "a+") as file:
             file.write("Preprocessing pipeline:\n")
@@ -538,6 +536,9 @@ def main(args):
             file.write("Command line arguments: " + "\n")
             for arg in vars(args):
                 file.write(arg + ": " + str(getattr(args, arg)) + "\n")
+            file.write("\n\n")
+            file.write("Full classification report: " + "\n")
+            file.write(report)
 
     # Demonstrate the image taking process
     elif args.showcase:
