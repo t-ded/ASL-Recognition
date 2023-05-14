@@ -11,9 +11,9 @@ and possibly the model predictions.
 import os
 import re
 import warnings
+from timeit import default_timer
 import cv2
 import tensorflow as tf
-from timeit import default_timer
 from utils import create_rectangle, get_dictionary
 
 

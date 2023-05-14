@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 # disable=C0301, C0103, E1101
 # TODO: Adjust README.md file
-# TODO: Adjust the docstring for this run function
 """
 A simple function to enable running
 the different scripts from command line.
@@ -151,7 +150,6 @@ train_settings.add_argument("--split", default=0.3, type=float, help="Portion of
 # Specify augmentation type and settings for RandAugment
 augmentation_settings = parser.add_argument_group("Augmentation settings")
 augmentation_settings.add_argument("-raug", "--randaugment", default=None, type=str, help="If given (in m,n format), pass the training dataset through the RandAugment pipeline with parameters m ((0, 100) range), n (positive int)")
-# TODO - Decide if this is a good approach # train_settings.add_argument("-efnet", "--efficient_net", action="store_true", help="If given, omit training of a new model and only finetune the output layers of the EfficientNetV2B0")
 
 # Specify the hyperparameters if the json file was not given
 hyperparameters = parser.add_argument_group("Hyperparameters")
@@ -254,7 +252,7 @@ def main(args):
         if args.experiment == -1:
 
             # Ask for confirmation in case the current folder already has some saved model in it
-            if len(list(os.walk(current_dir))):
+            if len(list(os.walk(current_dir))) > 0:
                 print("The folder with current model layout already contains some files.",
                       "Continuing to save the result of the current training procedure",
                       "might result in loss of the previous model.")
@@ -323,6 +321,7 @@ def main(args):
 
         # Save length of the training dataset for purposes of adjusting learning rate warm-up
         train_length = train_images.cardinality()
+        train_images = train_images.cache()
 
         # Create RandAugment layer with given arguments if prompted to do so
         if args.randaugment:
@@ -511,7 +510,7 @@ def main(args):
         # Generate the full classification report
         predictions = model.predict(test_images.map(lambda x, y: x, num_parallel_calls=tf.data.AUTOTUNE, deterministic=True))
         test_y = list(test_images.map(lambda x, y: y, num_parallel_calls=tf.data.AUTOTUNE, deterministic=True).unbatch().as_numpy_iterator())
-        report = classification_report(test_y,
+        report = classification_report(tf.argmax(test_y, axis=1).numpy(),
                                        tf.argmax(predictions, axis=1).numpy(),
                                        target_names=gestures)
 

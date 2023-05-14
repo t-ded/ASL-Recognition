@@ -9,8 +9,8 @@ Turns on the camera and guides the user through the data collection process.
 
 import os
 import re
-import cv2
 from timeit import default_timer
+import cv2
 from utils import create_rectangle, get_dictionary
 
 
@@ -224,7 +224,7 @@ def collect_data(gesture_list, examples="Examples", data_directory="Data",
 
                 # To reduce the number of almost identical frames, only save every n frames
                 # To give space for adjustments and "learning" a new sign, only start collecting after some time
-                if not current % 7 and current - current_amounts[gesture] > 60:
+                if not current % 15 and current - current_amounts[gesture] > 60:
 
                     # Estimate the time from the last saved image
                     if eta_flag:

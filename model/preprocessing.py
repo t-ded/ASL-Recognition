@@ -7,12 +7,12 @@ Modularized and parametrized preprocessing pipeline utilities for RGB images.
 @author: Tomáš Děd
 """
 
+import io
+from itertools import product
 import tensorflow as tf
 import tensorflow_addons as tfa
 import numpy as np
 import matplotlib.pyplot as plt
-import io
-from itertools import product
 from sklearn.metrics import confusion_matrix
 
 
@@ -53,12 +53,12 @@ class AdaptiveThresholding(tf.keras.layers.Layer):
                                    1,
                                    1], dtype="float32") / (self.block_size ** 2)
 
-    def call(self, input_batch):
+    def call(self, inputs):
         """
         Actions to perform on the input batch during layer call within tf.keras model
 
         Parameters:
-            input_batch: tf.data.dataset
+            inputs: tf.data.dataset
                 Batch for the layer to perform operations on
 
         Returns:
@@ -71,14 +71,14 @@ class AdaptiveThresholding(tf.keras.layers.Layer):
 
             # Obtain mean of each block per batch sample
             # via a convolution with an appropriate kernel
-            mean = tf.nn.conv2d(input_batch,
+            mean = tf.nn.conv2d(inputs,
                                 filters=self.kernel,
                                 strides=1,
                                 padding="SAME")
 
             # Mask and threshold the input batch by the means
             # Transpose for effective NHWC <-> NCHW conversion during TensorFlow's training
-            return tf.transpose(tf.where(tf.transpose(input_batch <= mean - self.constant,
+            return tf.transpose(tf.where(tf.transpose(inputs <= mean - self.constant,
                                                       perm=[0, 3, 1, 2]),
                                          255, 0),
                                 perm=[0, 2, 3, 1])
@@ -87,12 +87,12 @@ class AdaptiveThresholding(tf.keras.layers.Layer):
 
             # Obtain gaussian weighted sum of each block per batch sample
             # via a convolution with an appropriate kernel
-            gaussian_weighted = tfa.image.gaussian_filter2d(input_batch,
+            gaussian_weighted = tfa.image.gaussian_filter2d(inputs,
                                                             filter_shape=self.block_size)
 
             # Mask and threshold the input batch by the gaussian weighted sums
             # Transpose for effective NHWC <-> NCHW conversion during TensorFlow's training
-            return tf.transpose(tf.where(tf.transpose(input_batch <= gaussian_weighted - self.constant,
+            return tf.transpose(tf.where(tf.transpose(inputs <= gaussian_weighted - self.constant,
                                                       perm=[0, 3, 1, 2]),
                                          255, 0),
                                 perm=[0, 2, 3, 1])
@@ -146,12 +146,12 @@ class Grayscale(tf.keras.layers.Layer):
         super(Grayscale, self).__init__()
         self.trainable = False
 
-    def call(self, input_batch):
+    def call(self, inputs):
         """
         Actions to perform on the input batch during layer call within tf.keras model
 
         Parameters:
-            input_batch: tf.data.dataset
+            inputs: tf.data.dataset
                 Batch for the layer to perform operations on
 
         Returns:
@@ -159,7 +159,7 @@ class Grayscale(tf.keras.layers.Layer):
                 The batch on which the tfa.image.rgb_to_grayscale function was mapped
         """
 
-        return tf.image.rgb_to_grayscale(input_batch)
+        return tf.image.rgb_to_grayscale(inputs)
 
     def get_config(self):
         """
