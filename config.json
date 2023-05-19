@@ -8,8 +8,8 @@
     "Model": {
         "Current model": "model/current",
         "Model experiments": "model/experiments",
-        "Default architecture": "I,C-f64-k3-s3,P-tm-p2-s2,C-f64-k3-s3,P-tm-p2-s2,F,H-512,O",
-        "Default preprocessing": "I,G,B-tm-k7,T-tg-b3-c(3),R"
+        "Default architecture": "I,C-k5-f128-s1,P-tm-p3-s4,C-k5-f256-s1,P-tm-p3-s4,H-256,B,H-512,O",
+        "Default preprocessing": "I,G,T-tm-b7-c(3),R"
     },
     "General parameters": {
         "Image size": 196,
