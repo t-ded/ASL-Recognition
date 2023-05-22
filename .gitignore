@@ -14,3 +14,6 @@ logs/
 Old_version/
 Classical_ML_comparison.py
 __pycache__/
+rt_eval.rtf
+model/knn.joblib
+model/rfc.joblib
