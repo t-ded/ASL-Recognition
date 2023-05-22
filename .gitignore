@@ -17,3 +17,5 @@ __pycache__/
 rt_eval.rtf
 model/knn.joblib
 model/rfc.joblib
+Classical_ML_comparison.ipynb
+Manuscript image generation.ipynb
