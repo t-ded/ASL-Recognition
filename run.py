@@ -37,6 +37,10 @@ Further process specification parameters:
         If given, run the prediction mode in a guided format.
         That means, the correct gesture is assumed to be the one in the example photo.
         Model predictions are then colourcoded by their correctness.
+    --voice
+        If given, voice the most common prediction for the given example photo
+        when 'q' is hit during model showcasing. The sequence for this demonstration
+        is specified in the config.json file.
 
 Training parameters:
 
@@ -136,6 +140,7 @@ procedure.add_argument("-pred", "--predict", action="store_true", help="If given
 # Specify prediction settings
 prediction_settings = parser.add_argument_group("Prediction settings")
 prediction_settings.add_argument("--guided", action="store_true", help="If given, use the displayed example image as the correct label")
+prediction_settings.add_argument("--voice", action="store_true", help="If given, use voice the most common prediction for the current example image when 'q' is hit")
 
 # Specify training settings
 train_settings = parser.add_argument_group("Training settings")
@@ -570,11 +575,15 @@ def main(args):
             print("Terminating the prediction process.")
             return
 
+        # Use a list of sequences for voiced prediction demonstration if prompted to do so
+        sequence_list = config["General parameters"]["Voice sequence"] if args.voice else []
+
         showcase_model(gestures, examples=example_dir,
                        predict=True, model=model,
                        translations=config["Paths"]["Translations"],
                        img_size=img_size,
-                       guided=args.guided)
+                       guided=args.guided,
+                       sequence_list=sequence_list)
 
 
 if __name__ == "__main__":

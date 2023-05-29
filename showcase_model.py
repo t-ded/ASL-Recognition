@@ -12,22 +12,25 @@ import os
 import re
 import warnings
 from timeit import default_timer
+from itertools import cycle
+from collections import Counter
 import cv2
 import tensorflow as tf
+import pyttsx3
 from utils import create_rectangle, get_dictionary
 
 
 def showcase_model(gesture_list, examples="Examples",
                    predict=False, model=None,
                    translations="translations.txt", img_size=196,
-                   guided=False):
+                   guided=False, sequence_list=[]):
     """
     Function for image capturing and showcasing the process, preprocessing
     and possibly the model prediction if given the model.
 
     Throughout the run of the function, you can use the following commands by using keys on your keyboard:
         Esc - terminate the whole process
-        q - skip the current gesture and move to the next one
+        q - skip the current gesture and move to the next one (+ voice prediction if sequence_list given)
         l - switch language from English to Czech and vice versa
         p - pause the process
         spacebar - move the rectangle into the other position (one should be more comfortable for fingerspelling)
@@ -47,6 +50,8 @@ def showcase_model(gesture_list, examples="Examples",
             Size of images for prediction.
         guided: bool (default False)
             Whether or not to assume the current example as the correct label
+        sequence_list: list of str (default [])
+            List of sequences to use for voice demonstration
     """
 
     # Input management
@@ -101,6 +106,13 @@ def showcase_model(gesture_list, examples="Examples",
     if not isinstance(guided, bool):
         raise ValueError("Different datatype than boolean has been given as input for the guided parameter.")
 
+    if not isinstance(sequence_list, list):
+        raise ValueError("Different datatype than list has been given as input for the sequence_list parameter.")
+    if not all(isinstance(prompt, str) for prompt in sequence_list):
+        raise ValueError("An element in the sequence_list parameter is not a string.")
+    if not set(sequence_list).issubset(set(gesture_list)):
+        raise ValueError("An element in the sequence_list parameter is not present in the list of gestures.")
+
     # The rectangle in the frame that is cropped from the web camera image
     # (one for torso location, one for fingerspelling location)
     rect_size = int(img_size * 1.25) + 4
@@ -109,9 +121,15 @@ def showcase_model(gesture_list, examples="Examples",
     rect_fingerspell_2 = create_rectangle((350, 50), rect_size, rect_size)
     rect = rect_torso
 
-    # Naive solution to allow looping through the gestures in prediction environment
+    # Loop through the gesture list in prediction environment
     if predict:
-        gesture_list *= 5
+        full_gestures = gesture_list
+        gesture_list = cycle(gesture_list)
+
+        # Change the gesture list if expected to voice and initialize the voice engine
+        if sequence_list:
+            gesture_list = sequence_list
+            engine = pyttsx3.init()
 
     # Encapsulate the whole process to be able to close cameras in case of error
     try:
@@ -137,6 +155,8 @@ def showcase_model(gesture_list, examples="Examples",
             # Initialize necessary variables (different per gesture)
             flag = 0  # To know when a new gesture is being taken for the first time
             exit_flag = 0  # To let the user end the process early by clicking the "Esc" key
+            preds_list = Counter(full_gestures)  # To voice the predictions if the respective prompt given
+            frame_count = 0  # To ignore the first few frames for the voiced prediction
 
             # Continue until the user terminates the process
             while True:
@@ -148,10 +168,18 @@ def showcase_model(gesture_list, examples="Examples",
                     print("Try adjusting the camera number in specification of cap (default 0)")
                     break
                 frame = cv2.flip(frame, 1)
+                frame_count += 1
 
                 # End the process for the current gesture in case the "q" key is hit
                 key = cv2.waitKey(1)
                 if key == ord("q"):
+                    if sequence_list:
+                        final_pred = preds_list.most_common(1)[0]
+                        if final_pred[1] > 1:
+                            engine.say(final_pred[0])
+                            engine.runAndWait()
+                        else:
+                            print("Not enough data collected for voicing the prediction")
                     break
 
                 # End the whole process in case the "Esc" key is hit
@@ -201,7 +229,7 @@ def showcase_model(gesture_list, examples="Examples",
                     most_confident = tf.math.top_k(prediction, k=3)
                     most_confident_indices = most_confident.indices.numpy()[0]
                     most_confident_probabilities = most_confident.values.numpy()[0].round(2)
-                    most_confident_predictions = [gesture_list[ind] for ind in most_confident_indices]
+                    most_confident_predictions = [full_gestures[ind] for ind in most_confident_indices]
 
                     # Display all of the most confident predictions
                     for i, (pred, prob) in enumerate(zip(most_confident_predictions, most_confident_probabilities)):
@@ -217,6 +245,11 @@ def showcase_model(gesture_list, examples="Examples",
                                 pred_color = color
                         cv2.putText(frame, txt, (5, 350 + i * 35),
                                     cv2.FONT_HERSHEY_DUPLEX, 0.8, pred_color, 2)
+
+                        # If expected to voice the prediction, store the most confident one
+                        # starting after some initial warmup period
+                        if sequence_list and i == 0 and frame_count > 60:
+                            preds_list.update([pred])
 
                     # Display average time per gesture
                     cv2.putText(frame, "TPG: " + str(pred_time) + " s", (5, 470),

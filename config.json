@@ -14,6 +14,13 @@
     "General parameters": {
         "Image size": 196,
         "Desired amount": 250,
-        "Top-up amount": 250
+        "Top-up amount": 250,
+        "Voice sequence":
+        [
+            "My", "Name", "T", "O", "M",
+            "I index", "Want", "Ask", "Your", "Name",
+            "I index", "Want", "Bus", "Go", "To", "Work",
+            "I index", "Work", "With", "Internet"
+        ]
     }
 }
