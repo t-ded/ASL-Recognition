@@ -31,14 +31,24 @@ The repository also features a model pre-trained on a dataset collected by mysel
 ## Demonstration
 
 This video features a short demonstration of real-time predictions for the model:
-<span style="color:red">TODO</span>.
+
+!!!!
+
+<span style="color:red">*TODO*</span>.
+
+!!!!
 
 ## Installation
 
 This section shall guide the full installation process. Presence of Python v3.10.9 and pip v22.3.1 package installer on the device and basic knowledge of Python is assumed in this section and generally throughout this whole repository.
 
 The first step is to clone this repository. As the next step, setting up a virtual environment for Python is strongly recommended.
-<span style="color:red">TODO: Add a minimal working requirements.txt file and note how to set up venv from the requirements.txt!</span>.
+
+!!!!
+
+<span style="color:red">*TODO: Add a minimal working requirements.txt file and note how to set up venv from the requirements.txt*!</span>.
+
+!!!!
 
 The `Data` folder contains a small sample dataset, which is insufficient for satisfactory live recognition from camera but is enough for presentation of the training process.
 
