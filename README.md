@@ -1,19 +1,5 @@
 # Recognition of the American Sign Language in real time
 
-## Table of Contents
-
-- [Description](#description)
-- [Features](#features)
-- [Demo](#demo)
-- [Installation](#installation)
-- [Usage](#usage)
-  - [Data Collection](#data-collection)
-  - [Model Training](#model-training)
-- [Contributing](#contributing)
-- [License](#license)
-- [Acknowledgements](#acknowledgements)
-- [Contact](#contact)
-
 ## Description
 This project is a real-time American Sign Language (ASL) recognition system built using mainly TensorFlow, Keras, OpenCV2 and Python. It features multiple scripts for tasks ranging from data collection over model building and training to real-time model prediction from camera. The project was built as a fundamental component of the bachelor's thesis of mine, with the topic of "Construction of a Neural Networks model for translation of recorded sign language".
 
