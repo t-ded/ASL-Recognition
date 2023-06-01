@@ -19,3 +19,5 @@ model/knn.joblib
 model/rfc.joblib
 Classical_ML_comparison.ipynb
 Manuscript image generation.ipynb
+web_script.js
+index.html
