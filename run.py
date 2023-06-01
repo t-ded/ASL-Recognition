@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-# disable=C0301, C0103, E1101
-# TODO: Adjust README.md file
 """
 A simple function to enable running
 the different scripts from command line.

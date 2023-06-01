@@ -155,7 +155,8 @@ def showcase_model(gesture_list, examples="Examples",
             # Initialize necessary variables (different per gesture)
             flag = 0  # To know when a new gesture is being taken for the first time
             exit_flag = 0  # To let the user end the process early by clicking the "Esc" key
-            preds_list = Counter(full_gestures)  # To voice the predictions if the respective prompt given
+            if predict:
+                preds_list = Counter(full_gestures)  # To voice the predictions if the respective prompt given
             frame_count = 0  # To ignore the first few frames for the voiced prediction
 
             # Continue until the user terminates the process
