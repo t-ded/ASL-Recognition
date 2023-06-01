@@ -1,6 +1,6 @@
 {
     "Paths": {
-        "Data pipelines": "data_pipelines",
+        "Data pipelines": "preprocessing_pipelines",
         "Logs": "logs",
         "Translations": "translations.txt",
         "Gesture list": "gestures.txt"
