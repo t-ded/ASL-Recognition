@@ -18,7 +18,7 @@ The repository also features a model pre-trained on a dataset collected by mysel
   - [Model Building and Training](#model-building-and-training)
   - [Preprocessing Pipelines Demonstration](#preprocessing-pipelines-demonstration)
   - [Real-time Model Deployment](#real-time-model-deployment)
-- [Common Issues](#common-isues)
+- [Common Issues and How to Fix Them](#common-isues)
   - [ImportError: cannot import name 'builder' from 'google.protobuf.internal'](#importerrror)
 
 ## Features
@@ -57,10 +57,28 @@ pip install -r requirements.txt
 
 ## Components and Project Structure
 
-The `Data` folder contains a small sample dataset, which is insufficient for satisfactory live recognition from camera but is enough for presentation of the training process.
+Firstly, a slight disclaimer - please make sure to preserve the layout of the project as it is, since changing the folders, filenames or location of the files may lead to unexpected behaviour. Also note that the main parts of this script will only work on a device with a working camera. Also, the scripts utilizing image capturing might need slight tweaking in case the camera cannot be found in the default spot by `opencv2` (see [Common Issues and How to Fix Them](#common-issues) at the bottom of this guide).
 
-Please make sure to preserve the layour of the project as it is, since changing the folders or location of the files may lead to unexpected behaviour.  
-Also note that the main parts of this script will only work on a device with a working camera. The script for image capturing might need slight tweaking in case the camera cannot be found in the default spot by `opencv2`.  
+As it currently stands, the root directory of this project contains 6 folders and numerous files. This section shall provide a brief summary for most of these with further breakdown for the most important functionalities being presented in the following [Usage](#usage) section.
+
+* `pretrained_log` provides a TensorBoard log directory for the pre-trained model.
+* `Data` folder contains a small sample dataset, which is insufficient for satisfactory live recognition from camera but is enough for presentation of the training process.
+* `Examples` folder stores the example images for each of the gestures in the dataset. These instruct the users on how to perform each individual sign.
+* `preprocessing_pipelines` is the folder to store images of various preprocessing pipelines for comparison. This is where images from `showcase_collect_preprocessing.py` are saved.
+* `model` stores the scripts regarding model training as well as the models themselves.
+  * `model/current` folder is where the current pre-trained model is saved.
+  * `model/experiments` folder is created to store subsequent model training runs when starting training for the first time (not originally present in this repository).
+  * `model/knn_summary.txt` and `model/rfc_summary.txt` provide evaluations of the classical ML models used in this research for comparison (k-Nearest Neighbours and Random Forest).
+  * `model/model.py` is a script for building the model and preprocessing pipeline based on given text instructions.
+  * `model/preprocessing.py` is a script containing auxiliary classes and functions, such as custom TensorFlow layers and callbacks.
+* `collect_dataset.py` is a script that takes the user through the image collection process.
+* `config.json` is a configuration file for this project. Some important settings can be specified in this file, including paths to some components or the image size for the dataset.
+* `gestures.txt` is a list of gestures that are used in this project.
+* `run.py` is the run script for this project. Through this script, the usery can access every other component of the project by specifying the procedure in the command line.
+* `showcase_collect_preprocessing.py` is a script for real-time demonstration, comparison and saving of various preprocessing pipelines.
+* `showcase_model` is a script that starts the real-time environment and utilizes the model for real-time prediction if prompted to do so.
+* `translations.txt` is a file with English-Czech gesture pairs to enable using the application in both languages.
+* `utils.py` is a script storing various utility functions, such as functions for project initialization etc.
 
 ## Usage
 
@@ -70,11 +88,53 @@ This section will cover the guidelines to using all components of this project a
 python run.py
 ```
 
-Further command line arguments then specify the distinct procedures as well as their respective settings and parameters.
+From the most superficial perspective, the run script provides 5 different options:
+1. `python run.py -col` or `python run.py --collect` - this starts the image collection process.
+2. `python run.py -show` or `python run.py --showcase` - this is a basic procedure that can be used to familiarize the user with the environment and its controls. It starts the real-time camera view as well as shows the Example images. The user can use the same controls as with other components (see section [Real-time Prediction](#real-time-prediction) below). No images are saved and no predictions are done during this procedure. This is also the default procedure that is run when only `python run.py` is given.
+3. `python run.py -prep` or `python run.py --preprocessing` - this starts the process for comparison of various preprocessing pipelines in real-time.
+4. `python run.py -tr` or `python run.py --train` - this command starts the training procedure.
+5. `python run.py -pred` or `python run.py --predict` - when this command is entered, the run script tries to find a pre-trained model and use it for real-time prediction.
 
-## Common Issues
+Some of these procedures as well as their individual settings or parameters can then be further specified by additional commands. These can be found in the respective sections below.
 
-This chapter shall list some of the commonly observed issues when trying to implement the program with new devices as well ways found to fix them. In case of finding an issue you were not able to solve that is not presented here, please do not hesitate to contact me.
+### Image Collection
+
+The image collection scripts starts with initializing a real-time camera view as well as a window with example gestures from the `Example` folder serving as templates for the user. The images are saved into the `Data` folder.
+
+In the `config.json` file, the user can specify the image collection process beforehand. Apart from specifying the paths to the `translations.txt` and `gestures.txt` files, the user can set the *Image size* for the saved images (please note that the pre-trained model has been trained with image size 196, thus changing this parameter would require creating a new model for real-time inference purposes) as well as what is the *Desired amount*, that should be present in the `Data` folder per gesture at the end of the image collection procedure. For cases when the `Data` folder already contains this many files for each of the gestures, the user is prompted to confirm, whether they want to increase this amount by the *Top-up amount* (which results in collectiong Top-up amount-many images per gesture).
+
+The real-time camera view contains a rectangle which signalizes what part of the frame is being saved as well as name of the gesture that is currently being collected, the progress in terms of the number of the current gesture and the estimated time until the next gesture (ETA) in seconds. Every time a new gesture is being collected, a larger frame with the example photo is displayed for the user to get familiar with the gesture. Then, there is a slight warm-up period, during which the images are not being saved - this is signalized by the colours of the frame and texts being red. When these turn green, the images are being saved until the desired amount of frames per gesture are obtained or until the user decides to skip to the next gesture.
+
+To navigate the image collection process, the user has multiple controls (note that on most devices, the user must first select the live view in order for these to work):
+* Pressing `Spacebar` moves the rectangle into another position (there are 3 in total - starting with lower mid, then moving to upper left and then upper right).
+* `q` key can be used to end the process for the current gesture and skip to the next one.
+* `l` key switches the language of the gestures.
+* `p` pauses the process (and then `p` starts it again).
+* `Esc` key can be used to terminate the whole process.
+
+### Preprocessing Pipelines Comparison
+
+Running the script for preprocessing demonstration starts the classical real-time camera view but also opens 6 other smaller windows. Each of these displays a different preprocessing pipeline working in real time. These pipelines are specified in the `config.json` file in the form of textual instructions for the `build_preprocessing` function - for guidelines on these, please refer to the [Model Building](#model-building) section.
+
+This script offers controls in form of the `Esc` and `Spacebar` keys same as the image collection script. Furthemore, the `q` key can be used to save the current layout - in the `preprocessing_pipelines` folder, a new folder is created. This folder stores the summaries of the currently compared preprocessing pipelines and then with each press of the `q` key, a folder that contains an image for each of these.
+
+### Model Training
+
+### Real-time Model Prediction
+
+## Model Building
+
+### Preprocessing Pipelines
+
+!!!
+TODO: Describe how to build the preprocessing pipeline
+!!!
+
+### Trainable Model
+
+## Common Issues and How to Fix Them
+
+This chapter shall list some of the commonly observed issues that may arise when trying to implement the program with new devices as well ways found to fix them. In case of finding an issue you were not able to solve that is not presented here, please do not hesitate to contact me.
 
 ### ImportError: cannot import name 'builder' from 'google.protobuf.internal'
 
@@ -90,49 +150,3 @@ pip install protobuf==3.19.6
 ```
 4. Copy builder.py from location in step 2 to Lib/site-packages/google/protobuf/internal.
 5. The code should now work.
-
-
-
-
-
-
-The folder contains three key Python programs.  
-The `CNN.py` contains a `build_model` function, which enables the user to build a very basic convolutional neural network with a given number of layers.  
-The `image_collection.py` is the core module which contains multiple functions used for the purpose of setting up the project, folders and then capturing the images.  
-Last but not least, the `run.py` is the run script for this project.  
-
-
-
-There are three supported commands for this function:  
-
-1. collect - sets the project up and starts the collection process (opens the camera and starts capturing and saving the images for the dataset). Note that by default, the expected dataset size is 500 samples per gestures, which is the size of the sample dataset, thus this script will terminate immediately after execution.  
-2. train - use the images from the `Data` folder for training a simple convolutional neural network (by default 2 convolutional, 1 pooling and 2 dense layers) and saving the weights to `Weights` folder.  
-3. showcase - run the image capturing script and without saving the images, run live prediction using the model loaded from `Weights` folder or the previously trained model if `showcase` has been used alongside `train` parameter. The model does not perform well on live prediction with such insufficient dataset.  
-
-An example usecase is as follows:  
-
-```
-python run.py train showcase
-```
-
-When the image capturing script is being ran, you will see 4 windows.   
-In the left, there is your live view alongside with a rectangle and predicted sign in case of prediction being expected. You can use `spacebar` key to move the rectangle into one of three positions for better comfortability. You can also use the `Esc` key to terminate the script.  
-In the middle, the upper window shows grayscaled version and the lower window shows the binarized form of the rectangle in the left window - this is the part of the image on which the prediction is being made and the part that is saved during the dataset collection process.  
-In the right window, you can see the author of this project performing example gestures. During dataset collection process, this is the expected gesture, during showcasing, these serve as an inspiration for the user. You can move to the following gesture (during both processes) using the `q` key.   
-
-Apart from the scripts, the project also contains tests for all of the functions in the project.  
-These can be ran using the following commands in the command line:  
-
-```
-python -m pytest test_CNN.py
-python -m pytest test_image_collection.py
-```
-
-## Important notice
-
-Please do not share the repository since it contains code for an academic paper as well as personal data.  
-
-## Dataset collection
-
-Since the main goal of this project at the moment is to build a dataset, help with this goal is appreciated. If you would like to contribute to this process, do not hesitate to contact me.  
-The `collect` argument is designed for this purpose - note that by default, the expected size is set to 500 images per gesture, which is the size of the sample dataset in the `Data` folder. This is why the process terminates immediately when executed.  
