@@ -11,12 +11,14 @@ The repository also features a model pre-trained on a dataset collected by mysel
 - [Features](#features)
 - [Demonstration](#demonstration)
 - [Installation](#installation)
+- [Components and Project Structure](#components-and-project-structure)
 - [Usage](#usage)
   - [Environment Demonstration](#enviornment-demonstration)
   - [Data Collection](#data-collection)
   - [Model Building and Training](#model-building-and-training)
   - [Preprocessing Pipelines Demonstration](#preprocessing-pipelines-demonstration)
   - [Real-time Model Deployment](#real-time-model-deployment)
+- [Common Issues](#common-isues)
 
 ## Features
 
@@ -40,15 +42,19 @@ This video features a short demonstration of real-time predictions for the model
 
 ## Installation
 
-This section shall guide the full installation process. Presence of Python v3.10.9 and pip v22.3.1 package installer on the device and basic knowledge of Python is assumed in this section and generally throughout this whole repository.
+This section shall guide the full installation process. Presence of Python v3.10.9 and pip package installer on the device and basic knowledge of Python is assumed in this section and generally throughout this whole repository.
 
-The first step is to clone this repository. As the next step, setting up a virtual environment for Python is strongly recommended.
+The first step is to clone this repository, fork it or download ZIP version of the code. As the next step, setting up a virtual environment for Python is strongly recommended. All the necessary packages can then be installed from the requirements.txt file, which is a part of the repository. Another way is to set up a virtual environment with all the requirements via Conda (package manager). These steps can look along the following lines:
 
-!!!!
+```
+# To create a virtual environment with all required packages via conda:
+conda env create -f requirements.yml
 
-<span style="color:red">*TODO: Add a minimal working requirements.txt file and note how to set up venv from the requirements.txt*!</span>.
+# To install all packages specified in the requirements.txt file via pip:
+pip install -r requirements.txt
+```
 
-!!!!
+## Components and Project Structure
 
 The `Data` folder contains a small sample dataset, which is insufficient for satisfactory live recognition from camera but is enough for presentation of the training process.
 
@@ -64,6 +70,30 @@ python run.py
 ```
 
 Further command line arguments then specify the distinct procedures as well as their respective settings and parameters.
+
+## Common Issues
+
+This chapter shall list some of the commonly observed issues when trying to implement the program with new devices as well ways found to fix them. In case of finding an issue you were not able to solve that is not presented here, please do not hesitate to contact me.
+
+### ImportError: cannot import name 'builder' from 'google.protobuf.internal'
+
+Solution to this issue was taken from StackOverflow answer of user user19266443 (https://stackoverflow.com/a/72494013). The error may be encountered after installing the dependencies and trying to run the run script. When encountering this error, follow these steps:
+1. Install the latest protobuf version.
+```
+pip install --upgrade protobuf
+```
+2. Copy builder.py from .../Lib/site-packages/google/protobuf/internal (where .../ corresponds to the location of the project's folder or the virtual environment on your device) to another place on your computer.
+3. Install a protobuf version 3.19.6.
+```
+pip install protobuf==3.19.6
+```
+4. Copy builder.py from location in step 2 to Lib/site-packages/google/protobuf/internal.
+5. The code should now work.
+
+
+
+
+
 
 The folder contains three key Python programs.  
 The `CNN.py` contains a `build_model` function, which enables the user to build a very basic convolutional neural network with a given number of layers.  
