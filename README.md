@@ -19,6 +19,7 @@ The repository also features a model pre-trained on a dataset collected by mysel
   - [Preprocessing Pipelines Demonstration](#preprocessing-pipelines-demonstration)
   - [Real-time Model Deployment](#real-time-model-deployment)
 - [Common Issues](#common-isues)
+  - [ImportError: cannot import name 'builder' from 'google.protobuf.internal'](#importerrror)
 
 ## Features
 
