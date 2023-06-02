@@ -3,7 +3,7 @@
 ## Description
 This project is a real-time American Sign Language (ASL) recognition system built using mainly TensorFlow, Keras, OpenCV2 and Python. It features multiple scripts for tasks ranging from data collection over model building and training to real-time model prediction from camera. The project was built as a fundamental component of the bachelor's thesis of mine, with the topic of "Construction of a Neural Networks model for translation of recorded sign language".
 
-The repository also features a model pre-trained on a dataset collected by myself that features around 2,000 samples per each of 49 unique categories. The dataset comprises hands of 10 different people aged 10-64 of both genders that used both their hands while signing the gestures in front of almost 50 unique backgrounds under various lighting conditions. This helped the model achieve substantial ability to generalize to previously unseen data and reach real-time accuracy of 100 % for easier backgrounds with any lighting conditions and 93 % for extremely hard backgrounds with very poor lighting conditions.
+The repository also features a LeNet-based model pre-trained on a dataset collected by myself that features around 2,000 samples per each of 49 unique categories. The dataset comprises hands of 10 different people aged 10-64 of both genders that used both their hands while signing the gestures in front of almost 50 unique backgrounds under various lighting conditions. This helped the model achieve substantial ability to generalize to previously unseen data and reach real-time accuracy of 100 % for easier backgrounds with any lighting conditions and 93 % for extremely hard backgrounds with very poor lighting conditions.
 
 ## Table of Contents
 
@@ -95,7 +95,7 @@ From the most superficial perspective, the run script provides 5 different optio
 4. `python run.py -tr` or `python run.py --train` - this command starts the training procedure.
 5. `python run.py -pred` or `python run.py --predict` - when this command is entered, the run script tries to find a pre-trained model and use it for real-time prediction.
 
-Some of these procedures as well as their individual settings or parameters can then be further specified by additional commands. These can be found in the respective sections below.
+Some of these procedures as well as their individual settings or parameters can then be further specified by additional commands. These can be found in the respective sections below. For every process, the location of the configuration file (`config.json`) can also be specified by inserting `--config_dir=path`, where path is relative with respect to the `run.py` script. Nevertheless, the users are advised to keep the layout of the project unchanged, therefore the default `--config_dir=""` would suffice and the user does not have to set it manually.
 
 ### Image Collection
 
@@ -112,13 +112,49 @@ To navigate the image collection process, the user has multiple controls (note t
 * `p` pauses the process (and then `p` starts it again).
 * `Esc` key can be used to terminate the whole process.
 
+![Image collection environment](readme_images/collection_environment.png "Image collection environment")
+
 ### Preprocessing Pipelines Comparison
 
 Running the script for preprocessing demonstration starts the classical real-time camera view but also opens 6 other smaller windows. Each of these displays a different preprocessing pipeline working in real time. These pipelines are specified in the `config.json` file in the form of textual instructions for the `build_preprocessing` function - for guidelines on these, please refer to the [Model Building](#model-building) section.
 
 This script offers controls in form of the `Esc` and `Spacebar` keys same as the image collection script. Furthemore, the `q` key can be used to save the current layout - in the `preprocessing_pipelines` folder, a new folder is created. This folder stores the summaries of the currently compared preprocessing pipelines and then with each press of the `q` key, a folder that contains an image for each of these.
 
+![Preprocessing pipelines comparison environment](readme_images/collection_environment.png "Preprocessing pipelines comparison environment")
+
 ### Model Training
+
+The script for model training gathers the parameters specified by the user in the command line and starts model training. The user might be prompted to confirm some folder management, since training experiments are saved either into the `model/current` or `model/experiments` directory, where each experiment has its own numbered folder. This folder is then used for checkpoint saving as well as for saving the whole model after finishing the process. During training, multiple metrics are calculated and displayed - loss, accuracy, precision, recall, AUC and F1-score (all of these both training and validation). The training script also automatically checks the number of available GPUs, distributes the training across these in case more are available and also performs few precautions for this case (e.g., batch size increase). The training process also utilizes all available CPUs.
+
+The following arguments can be passed to the training script for further specification of the process:
+* `--experiment=N` (default None) - by inputing an integer *N*, this sets the numbering for the folder in `model/experiments`, i.e. `experiment_N`. If not given, the user will be prompted to confirm creation of new folder, which will be numbered as the number of experiment folders + 1. The user can also give `--experiment=-1`, which changes the save location for this experiment to `model/current`. In case the `model/current` folder already exists, the user is warned about the dangers of overwriting some previously saved model.
+* `-tb` or `--tensorboard` - including this argument turns on the TensorBoard callback, which results in saving the TensorBoard logs into the `logs` directory (by default, can be adjusted in the configuration file). After finishing the training procedure, the user can then open up the TensorBoard by running the following command from the root directory: `tensorboard --logdir=logs` (or a different folder, for instance with the given pre-trained, this could be `tensorboard --logdir=pretrained_log`. Apart from training performance evolution, TensorBoard also saves the evolution of learning rate (if it is changing) and confusion matrices after every epoch. Note that using TensorBoard during training may slow the training down.
+* `-es=monitor` or `--early_stopping=monitor`, where *monitor* is one of *\["disable", "loss", "accuracy", "f1_score", "recall", "precision", "auc"\]* (default loss) - using this argument with the *monitor* parameter other than "disable" sets up the Early Stopping callback, which stops the training process after 5 epochs of no improvement (where improvement delta is set to 0.001) in the given metric to monitor (or if after 10 epochs, the metric is not under the baseline of 1.5 for loss or over the baseline of 1.5 for other metrics).
+* `-nockpt` or `--disable_checkpoint` - entering this argument omits saving the training checkpoints after every epoch (the model is still saved after the full training).
+* `--seed=N` (default 123) - this sets the seed for TensorFlow random operations to *N*.
+* `--split=f` (default 0.3) - this sets the ratio of the train-test split to (1-*f*):*f*.
+
+Furthermore, the training process can be specified by the following hyperparameter options:
+* `-bs=N` or `--batch_size=N` (default 128) - a positive integer that sets the batch size to *N*.
+* `-e=N` or `--epochs=N` (default 10) - a positive integer to set the number of epochs to *N*.
+* `-opt=S` or `--optimizer=S` (default "adam") - the optimizer *S* to use with its corresponding weight decay variant (if expected). One of "adam" or "SGD".
+* `-lr=f` or `--learning_rate=f` (default 0.01) - a positive float *f* that specifies the initial learning rate.
+* `-lrd=N,M,O` or `--lr_decay=M,N,O` (default None) - a list of positive integers separated by commas (e.g., 10,20,30). The learning rate is reduced by a factor of 10 after each of these epochs (i.e., after *M*, *N* and *O* epochs).
+* `-lrw` or `--lr_warmup` - if given, learning rate warm-up is applied (gradual (per batch) linear learning rate scaling throughout the first five epochs starting from zero).
+* `-mom=f` or `--momentum=f` (default 0) - a positive float *f* to specify the momentum for the SGD optimizer.
+* `-wd` or `--weight_decay` (default 0) - a positive float *f* specifying strength of the weight decay within the optimizer.
+* `-ls=f` or `--label_smoothing=f` (default 0) - a positive float between 0 and 1 that prompts the script to apply label smoothing with strength *f* within the categorical crossentropy loss.
+
+Last but not least, the training procedure offers the following ways to further specify the process:
+* `-raug=M,N` or `--randaugment=M,N` (default None) - if given, the RandAugment augmentation pipeline with strength *M/100* (where *M* is a positive integer) and *N* augmentations per sample (where *N* is a positive integer) will be applied to the training set. Note that this significantly slows down the training process.
+* `-arch=S` or `--architecture=S` (default None) - this sets the architecture of the trainable model to *S*. For more information on how to set these instructions, please refer to the [Model building](#model-building) section. If this argument is not specified, the default architecture from the `config.json` file is taken.
+* `-prep=S` or `--preprocessing_layers=S` (default None) - this sets the architecture of the preprocessing pipeline to *S*. For more information on how to set these instructions, please refer to the [Model building](#model-building) section. If this argument is not specified, the default architecture from the `config.json` file is taken.
+
+These arguments offer very convenient way of completely specifying the training procedure and architecture simply from the command line. It is also worth noting, that these arguments are then saved to a .txt file together with the model summaries and performance results in the respective experiment folder, so that the experiments can be tracked easily. The following line shows an example usage of the training process:
+
+`python run.py -tr -tb -prep_layers="I,G,T-tm-b7-c(3),R" -arch="I,C-k5-f128-s1,P-tm-p3-s4,C-k5-f256-s1,P-tm-p3-s4,H-256,B,H-512,O" -nockpt -es=disable -raug=10,3 --epochs=50 -lrd=34,45 -opt=SGD -mom=0.95 -lr=0.01 -wd=0.003 -bs=32`
+
+This training procedure utilizes TensorBoard, sets the architectures of the preprocessing and trainable layers and disables checkpointing and Early Stopping. Beforehand, RandAugment with strength 0.1 and 3 augmentations per sample is applied to the training dataset. It lasts for 50 epochs with learning rate decay applied after 34th and 45th epoch. The training is done with the SGD optimizer with momentum set to 0.95, initial learning rate of 0.01 and weight decay of 0.003. Batch size is 32. Note that the ordering of the arguments does not matter.
 
 ### Real-time Model Prediction
 
