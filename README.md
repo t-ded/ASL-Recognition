@@ -14,14 +14,14 @@ The repository also features a LeNet-based model pre-trained on a dataset collec
 - [Components and Project Structure](#components-and-project-structure)
 - [Usage](#usage)
   - [Image Collection](#image-collection)
-  - [Preprocessing Pipelines Comparison](#preprocessing-pipelines-demonstration)
+  - [Preprocessing Pipelines Comparison](#preprocessing-pipelines-comparison)
   - [Model Training](#model-training)
   - [Real-time Model Prediction](#real-time-model-prediction)
 - [Model building](#model-building)
   - [Preprocessing Pipelines](#preprocessing-pipelines)
   - [Trainable Model](#trainable-model)
-- [Common Issues and How to Fix Them](#common-isues)
-  - [ImportError: cannot import name 'builder' from 'google.protobuf.internal'](#importerrror)
+- [Common Issues and How to Fix Them](#common-isues-and-how-to-fix-them)
+  - [ImportError: cannot import name 'builder' from 'google.protobuf.internal'](#ImportError:-cannot-import-name-'builder'-from-'google.protobuf.internal')
 
 ## Features
 
