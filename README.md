@@ -21,7 +21,7 @@ The repository also features a LeNet-based model pre-trained on a dataset collec
   - [Preprocessing Pipelines](#preprocessing-pipelines)
   - [Trainable Model](#trainable-model)
 - [Common Issues and How to Fix Them](#common-isues-and-how-to-fix-them)
-  - [ImportError: cannot import name 'builder' from 'google.protobuf.internal'](#ImportError:-cannot-import-name-'builder'-from-'google.protobuf.internal')
+  - [ImportError: cannot import name 'builder' from 'google.protobuf.internal'](#importerror:-cannot-import-name-'builder'-from-'google.protobuf.internal')
 
 ## Features
 
