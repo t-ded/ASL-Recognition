@@ -9,7 +9,16 @@
         "Current model": "model/current",
         "Model experiments": "model/experiments",
         "Default architecture": "I,C-k5-f128-s1,P-tm-p3-s4,C-k5-f256-s1,P-tm-p3-s4,H-256,B,H-512,O",
-        "Default preprocessing": "I,G,T-tm-b7-c(3),R"
+        "Default preprocessing": "I,G,T-tm-b7-c(3),R",
+        "Preprocessing pipelines": 
+        [
+            "I",
+            "I,G",
+            "I,G,T-tm-b7-c(3)",
+            "I,G,T-tg-b7-c(3)",
+            "I,G,T-tm-b7-c(-3)",
+            "I,G,T-tg-b7-c(-3)"
+        ]
     },
     "General parameters": {
         "Image size": 196,

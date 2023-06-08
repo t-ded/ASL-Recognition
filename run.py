@@ -64,7 +64,7 @@ Augmentation settings:
 
     -raug (--randaugment) (default None)
         A set of two positive integers "M,N" that specifies the settings for the RandAugment augmentation pipeline.
-        M decides the strngth of applied augmentations while N is the number of them in the pipeline.
+        M decides the strength of applied augmentations while N is the number of them in the pipeline.
 
 Hyperparametes:
 
@@ -234,7 +234,8 @@ def main(args):
 
         print("Starting to showcase different preprocessing pipelines")
 
-        showcase_preprocessing(inp_shape=[img_size, img_size, 3])
+        showcase_preprocessing(inp_shape=[img_size, img_size, 3],
+                               instructions=config["Model"]["Preprocessing pipelines"])
 
     # Build a new model and train it on the given data
     elif args.train:

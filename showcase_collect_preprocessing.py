@@ -15,7 +15,7 @@ from utils import create_rectangle, new_folder
 from model.model import build_preprocessing
 
 
-def showcase_preprocessing(inp_shape):
+def showcase_preprocessing(inp_shape, instructions):
     """
     Function for image capturing and showcasing & saving various preprocessing
     pipelines for comparison.
@@ -28,7 +28,23 @@ def showcase_preprocessing(inp_shape):
     Parameters:
         inp_shape: list of ints
             Dimensions of the input (excluding the size of the batch).
+        instructions: list of strs
+            6 preprocessing pipeline architecture in the build_preprocessing function from model.py format.
     """
+
+    # Input management
+    if not isinstance(inp_shape, list):
+        raise ValueError("Different datatype than list has been given as input for the parameter inp_shape.")
+    for val in inp_shape:
+        if not isinstance(val, int):
+            raise ValueError("Elements of the inp_shape list are not integers.")
+        if not val > 0:
+            raise ValueError("The dimensions of the input must be positive.")
+
+    if not isinstance(instructions, list):
+        raise ValueError("Different datatype than list has been given as input for the parameter instructions.")
+    if not all(isinstance(val, str) for val in instructions):
+        raise ValueError("The list of preprocessing pipeline architectures contains different datatype than string.")
 
     # The rectangle in the frame that is cropped from the web camera image
     # (one for torso location, one for fingerspelling location)
@@ -49,18 +65,10 @@ def showcase_preprocessing(inp_shape):
         cv2.resizeWindow("Camera view", 640, 480)
         cv2.moveWindow("Camera view", 15, 200)
 
-        for i in range(6):
+        for i in range(len(instructions)):
             cv2.namedWindow(f"Preprocessing pipeline {i + 1}")
             cv2.resizeWindow(f"Preprocessing pipeline {i + 1}", 320, 240)
             cv2.moveWindow(f"Preprocessing pipeline {i + 1}", 655 + 325 * (i % 2), 16 + 270 * (i // 2))
-
-        # Set a list of instructions
-        instructions = ["I,G,T-tm-b3-c(3)",
-                        "I,G,T-tm-b5-c(3)",
-                        "I,G,T-tm-b7-c(3)",
-                        "I,G,T-tg-b3-c(3)",
-                        "I,G,T-tg-b5-c(3)",
-                        "I,G,T-tg-b7-c(3)"]
 
         # Setting up preprocessing sequential pipelines
         pipelines_list = [build_preprocessing(inp_shape=inp_shape,
