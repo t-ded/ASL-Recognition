@@ -122,7 +122,7 @@ Running the script for preprocessing demonstration starts the classical real-tim
 
 This script offers controls in form of the `Esc` and `Spacebar` keys same as the image collection script. Furthemore, the `q` key can be used to save the current layout - in the `preprocessing_pipelines` folder, a new folder is created. This folder stores the summaries of the currently compared preprocessing pipelines and then with each press of the `q` key, a folder that contains an image for each of these.
 
-![Preprocessing pipelines comparison environment](readme_images/collection_environment.png "Preprocessing pipelines comparison environment")
+![Preprocessing pipelines comparison environment](readme_images/preprocessing_pipelines_environment.png "Preprocessing pipelines comparison environment")
 
 ### Model Training
 
