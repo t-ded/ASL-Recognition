@@ -13,11 +13,13 @@ The repository also features a LeNet-based model pre-trained on a dataset collec
 - [Installation](#installation)
 - [Components and Project Structure](#components-and-project-structure)
 - [Usage](#usage)
-  - [Environment Demonstration](#enviornment-demonstration)
-  - [Data Collection](#data-collection)
-  - [Model Building and Training](#model-building-and-training)
-  - [Preprocessing Pipelines Demonstration](#preprocessing-pipelines-demonstration)
-  - [Real-time Model Deployment](#real-time-model-deployment)
+  - [Image Collection](#image-collection)
+  - [Preprocessing Pipelines Comparison](#preprocessing-pipelines-demonstration)
+  - [Model Training](#model-training)
+  - [Real-time Model Prediction](#real-time-model-prediction)
+- [Model building](#model-building)
+  - [Preprocessing Pipelines](#preprocessing-pipelines)
+  - [Trainable Model](#trainable-model)
 - [Common Issues and How to Fix Them](#common-isues)
   - [ImportError: cannot import name 'builder' from 'google.protobuf.internal'](#importerrror)
 
@@ -37,7 +39,7 @@ This video features a short demonstration of real-time predictions for the model
 
 !!!!
 
-<span style="color:red">*TODO*</span>.
+**TODO**
 
 !!!!
 
@@ -90,7 +92,7 @@ python run.py
 
 From the most superficial perspective, the run script provides 5 different options:
 1. `python run.py -col` or `python run.py --collect` - this starts the image collection process.
-2. `python run.py -show` or `python run.py --showcase` - this is a basic procedure that can be used to familiarize the user with the environment and its controls. It starts the real-time camera view as well as shows the Example images. The user can use the same controls as with other components (see section [Real-time Prediction](#real-time-prediction) below). No images are saved and no predictions are done during this procedure. This is also the default procedure that is run when only `python run.py` is given.
+2. `python run.py -show` or `python run.py --showcase` - this is a basic procedure that can be used to familiarize the user with the environment and its controls. It starts the real-time camera view as well as shows the Example images. The user can use the same controls as with other components (see section [Real-time Model Prediction](#real-time-model-prediction) below). No images are saved and no predictions are done during this procedure. This is also the default procedure that is run when only `python run.py` is given.
 3. `python run.py -prep` or `python run.py --preprocessing` - this starts the process for comparison of various preprocessing pipelines in real-time.
 4. `python run.py -tr` or `python run.py --train` - this command starts the training procedure.
 5. `python run.py -pred` or `python run.py --predict` - when this command is entered, the run script tries to find a pre-trained model and use it for real-time prediction.
@@ -158,19 +160,83 @@ This training procedure utilizes TensorBoard, sets the architectures of the prep
 
 ### Real-time Model Prediction
 
+Lastly, real-time model inference can be started. The run script attempts to load the model saved in the location given by the "Current model" element of the `config.json` file (by default this is set to `model/current`. If successful, the model is then used for real-time inference. The layout is shown in the [Demonstration](#demonstration) chapter - the main window displays the camera view with the frame used for inference as well as the 3 most confident predictions with their probabilities and also the time taken per gesture in seconds (TPG). The secondary window then displays the example gestures for inspiration - during prediction, these are looped across infinitely.
+
+The live prediction regime offers two further specifications:
+* `--guided` - if given, the predictions are colour-coded with the correct one (which is considered to be the one in the current example photo) being green and the others red.
+* `--voice` - if given, the prediction voicing is enabled.
+
+This script offers similar controls to the other components:
+* Pressing `Spacebar` moves the rectangle into another position (there are 3 in total - starting with lower mid, then moving to upper left and then upper right).
+* `q` key can be used to move to the following example image. If prediction voicing is enabled, the most confident prediction of the model per frame is gathered and with hit of the `q` key, the most common prediction is vocalized (and the counts are set to 0).
+* `l` key switches the language of the gestures.
+* `p` pauses the process (and then `p` starts it again).
+* `Esc` key can be used to terminate the whole process.
+
 ## Model Building
+
+To enable convenient model building during training using textual instructions from the command line or from the configuration file, two model building functions were built (one for preprocessing, one for trainable layers). This chapter shall serve as guide for using these. Apart from the textual instruction, these functions also take a name for the model and input dimensionality as inputs. Furthemore, the function for the trainable model also supports specification of the output size to correctly choose the activation function for the output layer.
+
+In general, the textual instruction for these functions is in the form "layer1_type-specification1-specification2-specificationN,layer2_type,layerN_type", so the user is enabled to chain various types of layers in a sequential manner while also further specifying some of their parameters. Layers are separated by commas while their specifications are separated by dashes. For both functions, the input layer (with the given input shape) is added automatically if not present in the instructions as the first layer.
 
 ### Preprocessing Pipelines
 
-!!!
-TODO: Describe how to build the preprocessing pipeline
-!!!
+The function for building the preprocessing pipeline supports the following layers and their respective parameters and parameter values:
+* Input: I
+* Grayscale: G
+* AdaptiveThresholding: T
+    * type: t (one of Gaussian (g) or mean (m))
+    * block_size: b - default is 3
+    * constant: (c) (given in parentheses) - default is 0
+* Rescale: R
+
+Given these options, an example prompt could look as follows: "I,G,T-tm-b3-c(-3),R". This would build a preprocessing pipeline that consists of an input layer of given shape, a Grayscaling layer, an AdaptiveThresholding layer (of type mean with block size 3 and a constant factor of -3) and then finalized with a Rescaling layer to the `[0, 1]` interval.
+
+Note: The AdaptiveThresholding layer is a personal from scratch implementation of a layer that performs adaptive thresholding on the input. The implementation is stored in the `model/preprocessing.py` module. In order for adaptive thresholding to be an option, the image needs to be grayscaled first. The function will omit the AdaptiveThresholding layer if there is no Grayscaling layer preceding it. Furthermore, there can only be one Grayscaling layer, thus subsequent copies of this layer will also be omitted.
 
 ### Trainable Model
 
+Similarly to preprocessing pipeline building, the trainable block of the model can also be given from the command line via textual instructions when starting the training process. Note that except the output layer, each convolutional and dense layer is followed by the ReLU activation function. The function for this purpose supports the following layers and their parameters:
+* Input: I
+* Convolutional: C
+    * filters: f
+    * kernel_size: k
+    * stride: s - default is 1
+* Pooling: P
+    * type: t (one of average (a) or max (m))
+    * pool_size: p
+    * stride: s - default is 1
+* Flatten: F
+* Dropout: D
+    * rate
+* Hidden dense: H
+    * units
+* Batch normalization: B
+* Global Pooling: G
+    * type (one of average (a) or max (m))
+* Output: O
+    * The number of neurons is given by the compulsory `output_size` argument of the function (based on this, the activation function is determined either as `sigmoid` or as `softmax`)
+
+An example utilizing most of these options may look as follows: "I,C-k5-f128-s1,P-tm-p3-s4,C-k5-f256-s1,P-tm-p3-s4,H-256,B,H-512,O". This would result in the following model:
+* Input layer
+* Convolutional layer with kernel size 5, 128 filters and stride 1 with a ReLU activation
+* Max pooling layer with pool size 3 and stride 4
+* Convolutional layer with kernel size 5, 256 filters and stride 1 with a ReLU activation
+* Max pooling layer with pool size 3 and stride 4
+* Dense layer with 256 neurons without activation and bias term
+* Batch normalization layer followed by a ReLU activation
+* Dense layer with 512 neurons with a ReLU activation
+* Output dense layer with number of neurons given by `output_size` and either `sigmoid` or `softmax` activation depending on the number of neurons
+
+In order for the model to be built properly, the instructions need to follow multiple constraints that are enforced and in case of violance the respective layers are omitted or the missing layers are added. In case this happens, the user is always informed about the steps taken.
+
+First of all, the input and output layers are automatically added as the first and last layers if not present there already. Furthermore, in case the output layer was already present on some other location in the instructions, an error is raised. Next, in case a layer is missing some of the obligatory parameters, it is omitted. This also happens in case of some of the arguments being unsupported values (e.g., droprate outside the (0, 1) range). Nevertheless, the parameters are not fully checked and giving faulty ones may lead to crashes from TensorFlow. The model building function also does not ensure valid dimensionalities or structure of the model. An exception to this would be flattening prior to inserting a dense layer - if flatten layer is not present prior to the first dense layer (or if a convolution increased the dimensionality afterwards), it is added artificially.
+
+Also, the model building function ensures the appropriate application of the batch normalization layer. That is, the bias of the preceding layer is omitted for redundancy and the ReLU activation is applied only after the batch normalization layer.
+
 ## Common Issues and How to Fix Them
 
-This chapter shall list some of the commonly observed issues that may arise when trying to implement the program with new devices as well ways found to fix them. In case of finding an issue you were not able to solve that is not presented here, please do not hesitate to contact me.
+This chapter shall list some of the commonly observed issues that may arise when trying to implement the program with new devices as well ways found to fix them. In case of finding an issue you were not able to solve that is not presented here, please do not hesitate to contact me. 
 
 ### ImportError: cannot import name 'builder' from 'google.protobuf.internal'
 
