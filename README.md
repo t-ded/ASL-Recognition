@@ -59,7 +59,7 @@ pip install -r requirements.txt
 
 ## Components and Project Structure
 
-Firstly, a slight disclaimer - please make sure to preserve the layout of the project as it is, since changing the folders, filenames or location of the files may lead to unexpected behaviour. Also note that the main parts of this script will only work on a device with a working camera. Also, the scripts utilizing image capturing might need slight tweaking in case the camera cannot be found in the default spot by `opencv2` (see [Common Issues and How to Fix Them](#common-issues) at the bottom of this guide).
+Firstly, a slight disclaimer - please make sure to preserve the layout of the project as it is, since changing the folders, filenames or location of the files may lead to unexpected behaviour. Also note that the main parts of this script will only work on a device with a working camera and the scripts utilizing image capturing might need slight tweaking in case the camera cannot be found in the default spot by `opencv2`.
 
 As it currently stands, the root directory of this project contains 6 folders and numerous files. This section shall provide a brief summary for most of these with further breakdown for the most important functionalities being presented in the following [Usage](#usage) section.
 
@@ -122,7 +122,7 @@ Running the script for preprocessing demonstration starts the classical real-tim
 
 This script offers controls in form of the `Esc` and `Spacebar` keys same as the image collection script. Furthemore, the `q` key can be used to save the current layout - in the `preprocessing_pipelines` folder, a new folder is created. This folder stores the summaries of the currently compared preprocessing pipelines and then with each press of the `q` key, a folder that contains an image for each of these.
 
-![Preprocessing pipelines comparison environment](readme_images/collection_environment.png "Preprocessing pipelines comparison environment")
+![Preprocessing pipelines comparison environment](readme_images/preprocessing_pipelines_environment.png "Preprocessing pipelines comparison environment")
 
 ### Model Training
 
@@ -182,13 +182,13 @@ In general, the textual instruction for these functions is in the form "layer1_t
 ### Preprocessing Pipelines
 
 The function for building the preprocessing pipeline supports the following layers and their respective parameters and parameter values:
-* Input: I
-* Grayscale: G
-* AdaptiveThresholding: T
-    * type: t (one of Gaussian (g) or mean (m))
-    * block_size: b - default is 3
-    * constant: (c) (given in parentheses) - default is 0
-* Rescale: R
+* `Input`: I
+* `Grayscaling`: G
+* `AdaptiveThresholding`: T
+    * `type`: t (one of Gaussian (g) or mean (m))
+    * `block_size`: b - default is 3
+    * `constant`: (c) (given in parentheses) - default is 0
+* `Rescaling`: R
 
 Given these options, an example prompt could look as follows: "I,G,T-tm-b3-c(-3),R". This would build a preprocessing pipeline that consists of an input layer of given shape, a Grayscaling layer, an AdaptiveThresholding layer (of type mean with block size 3 and a constant factor of -3) and then finalized with a Rescaling layer to the `[0, 1]` interval.
 
@@ -197,24 +197,24 @@ Note: The AdaptiveThresholding layer is a personal from scratch implementation o
 ### Trainable Model
 
 Similarly to preprocessing pipeline building, the trainable block of the model can also be given from the command line via textual instructions when starting the training process. Note that except the output layer, each convolutional and dense layer is followed by the ReLU activation function. The function for this purpose supports the following layers and their parameters:
-* Input: I
-* Convolutional: C
-    * filters: f
-    * kernel_size: k
-    * stride: s - default is 1
-* Pooling: P
-    * type: t (one of average (a) or max (m))
-    * pool_size: p
-    * stride: s - default is 1
-* Flatten: F
-* Dropout: D
-    * rate
-* Hidden dense: H
-    * units
-* Batch normalization: B
-* Global Pooling: G
-    * type (one of average (a) or max (m))
-* Output: O
+* `Input`: I
+* `Convolutional`: C
+    * `filters`: f
+    * `kernel_size`: k
+    * `stride`: s - default is 1
+* `Pooling`: P
+    * `type`: t (one of average (a) or max (m))
+    * `pool_size`: p
+    * `stride`: s - default is 1
+* `Flatten`: F
+* `Dropout`: D
+    * `rate`
+* `Hidden dense`: H
+    * `units`
+* `Batch Normalization`: B
+* `Global Pooling`: G
+    * `type` (one of average (a) or max (m))
+* `Output`: O
     * The number of neurons is given by the compulsory `output_size` argument of the function (based on this, the activation function is determined either as `sigmoid` or as `softmax`)
 
 An example utilizing most of these options may look as follows: "I,C-k5-f128-s1,P-tm-p3-s4,C-k5-f256-s1,P-tm-p3-s4,H-256,B,H-512,O". This would result in the following model:
@@ -223,6 +223,7 @@ An example utilizing most of these options may look as follows: "I,C-k5-f128-s1,
 * Max pooling layer with pool size 3 and stride 4
 * Convolutional layer with kernel size 5, 256 filters and stride 1 with a ReLU activation
 * Max pooling layer with pool size 3 and stride 4
+* Flatten layer (added automatically prior to Dense layer when the feature map is non-flattened)
 * Dense layer with 256 neurons without activation and bias term
 * Batch normalization layer followed by a ReLU activation
 * Dense layer with 512 neurons with a ReLU activation
@@ -230,7 +231,7 @@ An example utilizing most of these options may look as follows: "I,C-k5-f128-s1,
 
 In order for the model to be built properly, the instructions need to follow multiple constraints that are enforced and in case of violance the respective layers are omitted or the missing layers are added. In case this happens, the user is always informed about the steps taken.
 
-First of all, the input and output layers are automatically added as the first and last layers if not present there already. Furthermore, in case the output layer was already present on some other location in the instructions, an error is raised. Next, in case a layer is missing some of the obligatory parameters, it is omitted. This also happens in case of some of the arguments being unsupported values (e.g., droprate outside the (0, 1) range). Nevertheless, the parameters are not fully checked and giving faulty ones may lead to crashes from TensorFlow. The model building function also does not ensure valid dimensionalities or structure of the model. An exception to this would be flattening prior to inserting a dense layer - if flatten layer is not present prior to the first dense layer (or if a convolution increased the dimensionality afterwards), it is added artificially.
+First of all, the input and output layers are automatically added as the first and last layers if not present there already. Furthermore, in case the output layer was already present on some other location in the instructions, an error is raised. Next, in case a layer is missing some of the obligatory parameters, it is omitted. This also happens in case of some of the arguments being unsupported values (e.g., droprate outside the (0, 1) range). Nevertheless, the parameters are not fully checked and giving faulty ones may lead to crashes from TensorFlow. The model building function also does not ensure valid dimensionalities or structure of the model. An exception to this would be flattening prior to inserting a dense layer - if flatten layer is not present prior to the first dense layer (or if a convolution increased the dimensionality afterwards), it is added artificially (see example above).
 
 Also, the model building function ensures the appropriate application of the batch normalization layer. That is, the bias of the preceding layer is omitted for redundancy and the ReLU activation is applied only after the batch normalization layer.
 
