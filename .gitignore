@@ -21,3 +21,6 @@ Manuscript image generation.ipynb
 web_script.js
 index.html
 tests/
+docker-compose.yml
+asl-dockerfile.py
+Data_test
