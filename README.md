@@ -37,7 +37,7 @@ The repository also features a LeNet-based model pre-trained on a dataset collec
 
 This video features a short demonstration of real-time predictions for the model with the translated text being "My name T-O-M":
 
-https://github.com/t-ded/ASL-Recognition/assets/64506802/d173bb99-da21-4ebf-bbd0-c8e14e82e520
+https://github.com/t-ded/ASL-Recognition/assets/64506802/c3b08b36-3964-45ad-95b2-970d3813abff
 
 ## Installation
 
