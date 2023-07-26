@@ -35,13 +35,9 @@ The repository also features a LeNet-based model pre-trained on a dataset collec
 
 ## Demonstration
 
-This video features a short demonstration of real-time predictions for the model:
+This video features a short demonstration of real-time predictions for the model with the translated text being "My name T-O-M":
 
-!!!!
-
-**TODO**
-
-!!!!
+![Demo-My_Name_T_O_M](readme_images/Demo-My_Name_T_O_M.mp4 "Real-time prediction demonstration")
 
 ## Installation
 
